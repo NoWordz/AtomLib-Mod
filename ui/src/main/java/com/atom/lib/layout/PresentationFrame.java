@@ -14,6 +14,8 @@ public final class PresentationFrame implements LayoutSnapshot {
     private Map<NodeId,Float> scales=Map.of();
     private Map<NodeId,Float> opacity=Map.of();
     private Set<NodeId> entering=Set.of();
+    private Set<NodeId> transformed=Set.of();
+    public boolean hasTransform(NodeId id){return transformed.contains(id);}
     private Map<NodeId,Offset> entranceOffsets=Map.of();
     private Map<ScrollViewport,ScrollViewport.State> scrollStates=Map.of();
     PresentationFrame withScroll(ScrollViewport viewport,ScrollViewport.State state){scrollStates=Map.of(viewport,state);paintingFrames.clear();return this;}
@@ -49,7 +51,7 @@ public final class PresentationFrame implements LayoutSnapshot {
         var next=new LinkedHashMap<NodeId,LayoutBox>();var metadata=new HashMap<NodeId,Float>();
         for(var id:order){var b=box(id);next.put(id,new LayoutBox(scale(b.border(),scale),scale(b.content(),scale),scale(b.hit(),scale),scale(b.clip(),scale),b.parent(),b.scrollOwner()));metadata.put(id,renderScale(id)*scale);}
         var offsets=new HashMap<NodeId,Offset>();entranceOffsets.forEach((id,o)->offsets.put(id,new Offset(o.x()*scale,o.y()*scale)));
-        var result=new PresentationFrame(revision,next,order);result.scales=Map.copyOf(metadata);result.paintingBoxes=paintingBoxes;result.opacity=opacity;result.entering=entering;result.entranceOffsets=Map.copyOf(offsets);result.scrollStates=scaleScrollStates(scrollStates,scale);return result;
+        var result=new PresentationFrame(revision,next,order);result.scales=Map.copyOf(metadata);result.paintingBoxes=paintingBoxes;result.opacity=opacity;result.entering=entering;result.entranceOffsets=Map.copyOf(offsets);result.scrollStates=scaleScrollStates(scrollStates,scale);result.transformed=transformed;return result;
     }
     private static Rect scale(Rect r,float s){return new Rect(r.x()*s,r.y()*s,r.width()*s,r.height()*s);}
     private static Map<ScrollViewport,ScrollViewport.State> scaleScrollStates(Map<ScrollViewport,ScrollViewport.State> states,float factor){
@@ -58,6 +60,39 @@ public final class PresentationFrame implements LayoutSnapshot {
         return Map.copyOf(result);
     }
     public float renderScale(NodeId id){return scales.getOrDefault(id,1f);}
+    public boolean hasPresentationTransform(NodeId id){return transformed.contains(id);}
+    /** Translates displayed and painting geometry together, preserving measured text widths. */
+    public PresentationFrame translated(float dx,float dy){
+        if(!Float.isFinite(dx)||!Float.isFinite(dy))throw new IllegalArgumentException("Invalid translation");
+        var next=new LinkedHashMap<NodeId,LayoutBox>();var paint=new LinkedHashMap<NodeId,LayoutBox>();
+        for(var id:order){next.put(id,translate(box(id),dx,dy));float s=renderScale(id);paint.put(id,translate(paintingBoxes.get(id),dx/s,dy/s));}
+        var result=new PresentationFrame(revision,next,order);result.paintingBoxes=Map.copyOf(paint);result.scales=scales;result.opacity=opacity;result.entering=entering;result.entranceOffsets=entranceOffsets;
+        var states=new HashMap<ScrollViewport,ScrollViewport.State>();scrollStates.forEach((v,s)->states.put(v,new ScrollViewport.State(s.bounds().translate(dx,dy),s.extent(),s.offset(),s.descendants())));result.scrollStates=Map.copyOf(states);result.transformed=transformed;return result;
+    }
+    private static LayoutBox translate(LayoutBox b,float dx,float dy){return new LayoutBox(b.border().translate(dx,dy),b.content().translate(dx,dy),b.hit().translate(dx,dy),b.clip().translate(dx,dy),b.parent(),b.scrollOwner());}
+    /** A page transform stays a presentation operation; the host still chooses and owns its pages. */
+    public PresentationFrame transformed(float scale,float pivotX,float pivotY,float dx,float dy){var frame=scaled(scale).translated(pivotX*(1-scale)+dx,pivotY*(1-scale)+dy);frame.transformed=Set.copyOf(order);return frame;}
+    /** Clip the displayed frame to its external viewport after a page transform. */
+    public PresentationFrame clipped(Rect clip){
+        Objects.requireNonNull(clip);var next=new LinkedHashMap<NodeId,LayoutBox>();var paint=new LinkedHashMap<NodeId,LayoutBox>();
+        for(var id:order){var b=box(id);next.put(id,new LayoutBox(b.border(),b.content(),b.hit(),b.clip().intersect(clip),b.parent(),b.scrollOwner()));var p=paintingBoxes.get(id);paint.put(id,new LayoutBox(p.border(),p.content(),p.hit(),p.clip().intersect(scale(clip,1/renderScale(id))),p.parent(),p.scrollOwner()));}
+        var result=new PresentationFrame(revision,next,order);result.paintingBoxes=Map.copyOf(paint);result.scales=scales;result.opacity=opacity;result.entering=entering;result.entranceOffsets=entranceOffsets;result.scrollStates=scrollStates;result.transformed=transformed;return result;
+    }
+    /** Disjoint control subtrees scale about their own centre. Ancestor clips remain fixed. */
+    public PresentationFrame feedback(Map<NodeId,Float> factors){
+        if(factors.isEmpty())return this;
+        for(var entry:factors.entrySet())if(!contains(entry.getKey())||!Float.isFinite(entry.getValue())||entry.getValue()<=0)throw new IllegalArgumentException("Invalid feedback root/scale");
+        var next=new LinkedHashMap<NodeId,LayoutBox>();var paint=new LinkedHashMap<NodeId,LayoutBox>();var metadata=new HashMap<>(scales);var roots=new HashMap<NodeId,NodeId>();
+        for(var id:order){var b=box(id);NodeId inherited=roots.get(b.parent());if(inherited!=null&&factors.containsKey(id))throw new IllegalArgumentException("Nested feedback roots");NodeId root=factors.containsKey(id)?id:inherited;if(root==null){next.put(id,b);paint.put(id,paintingBoxes.get(id));continue;}roots.put(id,root);
+            float factor=factors.get(root),s=renderScale(id)*factor;var r=box(root).border();float dx=(r.x()+r.width()/2)*(1-factor),dy=(r.y()+r.height()/2)*(1-factor);
+            var parent=box(root).parent();Rect fixedClip=parent==null?box(root).clip():box(parent).clip();
+            Rect clip=scale(b.clip(),factor).translate(dx,dy).intersect(fixedClip);
+            var mapped=new LayoutBox(scale(b.border(),factor).translate(dx,dy),scale(b.content(),factor).translate(dx,dy),scale(b.hit(),factor).translate(dx,dy),clip,b.parent(),b.scrollOwner());next.put(id,mapped);metadata.put(id,s);
+            var old=paintingBoxes.get(id);paint.put(id,new LayoutBox(measured(mapped.border(),old.border(),s),measured(mapped.content(),old.content(),s),measured(mapped.hit(),old.hit(),s),scale(clip,1/s),b.parent(),b.scrollOwner()));
+        }
+        var result=new PresentationFrame(revision,next,order);result.paintingBoxes=Map.copyOf(paint);result.scales=Map.copyOf(metadata);result.opacity=opacity;result.entering=entering;result.entranceOffsets=entranceOffsets;result.scrollStates=scrollStates;var changed=new HashSet<>(transformed);changed.addAll(roots.keySet());result.transformed=Set.copyOf(changed);return result;
+    }
+    private static Rect measured(Rect displayed,Rect measured,float scale){return new Rect(displayed.x()/scale,displayed.y()/scale,measured.width(),measured.height());}
     public float opacity(NodeId id){return opacity.getOrDefault(id,1f);}
     public boolean hasEntrance(NodeId id){return entering.contains(id);}
     public Rect unanimatedBorder(NodeId id){var o=entranceOffsets.get(id);return o==null?box(id).border():box(id).border().translate(-o.x(),-o.y());}
@@ -79,13 +114,15 @@ public final class PresentationFrame implements LayoutSnapshot {
     }
     /** Layers are already positioned and clipped; later layers paint and hit above earlier layers. */
     public static PresentationFrame compose(List<PresentationFrame> layers){
+        var transformed=new HashSet<NodeId>();
         var boxes=new LinkedHashMap<NodeId,LayoutBox>();var paintingBoxes=new LinkedHashMap<NodeId,LayoutBox>();var order=new ArrayList<NodeId>();var scales=new HashMap<NodeId,Float>();var opacity=new HashMap<NodeId,Float>();var entering=new HashSet<NodeId>();var offsets=new HashMap<NodeId,Offset>();var scrollStates=new HashMap<ScrollViewport,ScrollViewport.State>();long revision=1;
         for(var layer:layers){
+            transformed.addAll(layer.transformed);
             for(var entry:layer.scrollStates.entrySet())if(scrollStates.putIfAbsent(entry.getKey(),entry.getValue())!=null)throw new IllegalArgumentException("Duplicate scroll viewport layer");
             revision=31*revision+layer.revision();
             for(var id:layer.order){if(boxes.putIfAbsent(id,layer.box(id))!=null)throw new IllegalArgumentException("Duplicate displayed ID: "+id);paintingBoxes.put(id,layer.paintingBoxes.get(id));order.add(id);scales.put(id,layer.renderScale(id));if(layer.hasEntrance(id)){opacity.put(id,layer.opacity(id));entering.add(id);offsets.put(id,layer.entranceOffsets.get(id));}}
         }
-        var result=new PresentationFrame(revision,boxes,order);result.scales=Map.copyOf(scales);result.opacity=Map.copyOf(opacity);result.entering=Set.copyOf(entering);result.entranceOffsets=Map.copyOf(offsets);result.paintingBoxes=Map.copyOf(paintingBoxes);result.scrollStates=Map.copyOf(scrollStates);return result;
+        var result=new PresentationFrame(revision,boxes,order);result.scales=Map.copyOf(scales);result.opacity=Map.copyOf(opacity);result.entering=Set.copyOf(entering);result.entranceOffsets=Map.copyOf(offsets);result.paintingBoxes=Map.copyOf(paintingBoxes);result.scrollStates=Map.copyOf(scrollStates);result.transformed=Set.copyOf(transformed);return result;
     }
     /** Gives a naturally measured root a scrolling viewport without remeasuring its text
      * under an AtMost height (which would discard the overflow we need to scroll). */

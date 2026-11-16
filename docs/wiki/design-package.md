@@ -1,6 +1,12 @@
 # AtomChat design package
 
-## AtomDefault（本地实施中）
+## 0.5 安全入口
+
+新界面优先使用 `AtomDefault.createSession(runtime)`；每个窗口拥有自己的 theme/motion 选择、控件、焦点与反馈。`beginFrame` 固定快照，SettingsShell 和控件共同消费实例皮肤；`frame.card/panel` 用于直绘与明确的模糊降级。主题与动效可独立预览，选择器不读写宿主配置。完整示例、材质与兼容边界见 [sessions](sessions.md)。
+
+下方为低层/旧入口说明；`skin(palette)` 仍可使用，但完整帧材质与隔离便利入口是 `createSession`。
+
+## AtomDefault 低层皮肤入口
 
 `com.atom.lib.design.atomdefault.AtomDefault` 提供独立皮肤入口：`skin()` 使用现有默认外观；`skin(AtomDefault.presets().get(i))` 创建使用指定配色的新实例。每个宿主持有自己的 `ControlContext`、皮肤与 `TextService`；切换颜色时在该皮肤上调用 `updateStyle(palette.controlStyle(radius, halfScreen, cardTint))`。原 `AtomChatControlSkin(AtomChatControlStyle)` 与 `design.atomchat` API 保留，旧全局 `Design.host` / `Design.rippleSink` 仍有全局状态，不应作为多宿主隔离入口；旧入口弃用期限尚未确定。
 

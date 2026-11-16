@@ -10,14 +10,28 @@ public final class ScrollViewport {
     public void publish(PresentationFrame frame){var s=frame.scrollState(this);if(s!=null){bounds=s.bounds();extent=s.extent();offset=s.offset();descendants=s.descendants();}}
     public Rect thumb(PresentationFrame frame){var s=frame.scrollState(this);return s==null?thumb():thumb(s.bounds(),s.extent(),s.offset());}
     private boolean hovered;
+    private SmoothScroll smoothing;
+    private com.atom.lib.motion.FrameTime frameTime;
+    private com.atom.lib.motion.MotionSpec motion;
+    /** Safe-session path calls this before layout. Legacy scrollBy remains immediate. */
+    public void advance(com.atom.lib.motion.FrameTime time,com.atom.lib.motion.MotionSpec motion){
+        if(smoothing==null){smoothing=new SmoothScroll();smoothing.bounds(extent,bounds.height());smoothing.jump(offset,time);}
+        frameTime=Objects.requireNonNull(time);this.motion=Objects.requireNonNull(motion);smoothing.bounds(extent,bounds.height());offset=smoothing.sample(time,motion);
+    }
+    public boolean wheelBy(float delta){
+        if(smoothing==null)return scrollBy(delta);
+        if(!Float.isFinite(delta))throw new IllegalArgumentException("Nonfinite scroll");
+        smoothing.wheel(delta,frameTime,motion);if(!motion.enabled())offset=smoothing.sample(frameTime,motion);return true;
+    }
+    public float scrollbarOpacity(){return smoothing==null?1:smoothing.scrollbarOpacity(frameTime,hovered,false,motion);}
     public void hover(float x,float y){var t=thumb();hovered=t.height()>0&&new Rect(t.x()-3,bounds.y(),t.width()+6,bounds.height()).contains(x,y);}
-    public boolean scrollbarVisible(){return offset>0||hovered;}
+    public boolean scrollbarVisible(){return smoothing==null?offset>0||hovered:scrollbarOpacity()>0;}
     public float offset(){return offset;}
     public float extent(){return extent;}
     public Rect bounds(){return bounds;}
     public boolean contains(NodeId id){return descendants.contains(id);}
     public boolean contains(PresentationFrame frame,NodeId id){var state=frame.scrollState(this);return state!=null&&state.descendants().contains(id);}
-    public boolean scrollBy(float delta){if(!Float.isFinite(delta))throw new IllegalArgumentException("Nonfinite scroll");float next=Math.max(0,Math.min(Math.max(0,extent-bounds.height()),offset+delta));boolean changed=next!=offset;offset=next;return changed;}
+    public boolean scrollBy(float delta){if(!Float.isFinite(delta))throw new IllegalArgumentException("Nonfinite scroll");float next=Math.max(0,Math.min(Math.max(0,extent-bounds.height()),offset+delta));boolean changed=next!=offset;offset=next;if(smoothing!=null)smoothing.jump(offset,frameTime);return changed;}
     public boolean ensureVisible(Rect row){if(row.y()<bounds.y())return scrollBy(row.y()-bounds.y());if(row.bottom()>bounds.bottom())return scrollBy(row.bottom()-bounds.bottom());return false;}
     public PresentationFrame present(LayoutTree tree,LayoutSnapshot natural,Viewport screen,Rect bounds,float scale){
         return present(tree,natural,screen,bounds,scale,Map.of());

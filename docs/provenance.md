@@ -1,5 +1,14 @@
 # AtomLib 来源门（T0）
 
+## 0.5.0 来源补充（2026-11-16）
+
+- 新增会话、动效、编辑与虚拟容器依据 AtomLib 的显式帧、实例状态和通用交互合同独立实现，Apache-2.0；没有复制 Module Shop 的 Java 实现或素材。
+- 感谢 ar_zhe / [Module Shop](https://github.com/Ar-Zhe/Module-Shop/tree/6e405e316dc71d6ff6be29fd75514556c2723990) 提供自适应网格、表格、输入适配及生命周期的设计参考；感谢 Muonium Player 提供渲染思路和状态捕获成本的研究参照。
+- `AtomDefault.java` 延续原 MIT 配色准入，选择性更新 elegant 的强调/次级文字/边框与四个 glass 预设的次级文字；来源为 AtomChat `720d20d567a66d54cfb479b30adf5769fe590ee3` 的 `shared/src/main/java/com/atom/chat/theme/ThemeService.java`，保留 `licenses/AtomChat-MIT.txt` 和源文件署名。预设 ID、已有宿主自定义颜色与持久化均保持宿主管理。
+- 上述设计鸣谢与既有第三方许可分别列于 README 和 NOTICE；未新增字体、图标、音频或第三方实现副本。
+
+下方保留 T0 及历次准入的历史范围。
+
 > 2026-11-03 图片预处理：`ImageDownsampler` 根据用户批准方案里的生命周期与预算合同独立编写，使用已锁定的 Skija 图片、画布和采样 API；未复制 AtomChat `ImageQuality` 的表达或阈值，也未复制 Dango/UiStagger。输入、处理和限制见[离屏记录](evidence/atomdefault-image-20261103/report.md)。这是来源记录，不声称人员隔离的 clean-room。
 
 > 2026-11-01 完整外观候选：按用户批准的 appearance-replication-and-backdrop 方案，新增设置行、组卡片、设置壳、通用激活/choice/disclosure、单垂直滚动和 Raw GL 模糊服务。三份 `platforms/shared/src/main/resources/assets/atomlib/shaders/backdrop/` GLSL 为本实施者依据四邻点凸平均、圆角 SDF 和显式 RGB/alpha 合同新写，Apache-2.0。未读取 Tuui，未复制/翻译/拼接 I 类旧 AC renderer/GLSL 或整页；只读主代理参照规格/图片及现有准入 token/材料。不是人员隔离 clean-room。新登记另见 `assets/original-backdrop.json`；不改下文 T0 历史判断。字体源字节和第三方声明保留。

@@ -42,7 +42,8 @@ public final class UiCards {
         SkiaDraw.drawRoundedShadow(canvas,x,y,w,h,radius,UiTokens.CONTENT_SHADOW_BLUR,UiTokens.CARD_SHADOW);
         SkiaDraw.drawRoundedRect(canvas,x,y,w,h,radius,fill);
         int base=UiTokens.cardCutout(host);
-        SkiaDraw.drawEdgeHighlight(canvas,x,y,w,h,radius,UiTokens.s(1),UiTokens.hairline(base));
+        int outline=host instanceof AtomChatControlStyle style&&style.outlineColor()!=0?style.outlineColor():UiTokens.hairline(base);
+        SkiaDraw.drawEdgeHighlight(canvas,x,y,w,h,radius,UiTokens.s(1),outline);
         if(hoverWeight>0.01f)SkiaDraw.drawRoundedRect(canvas,x,y,w,h,radius,UiTokens.cardHover(host.accentColor(),base,hoverWeight));
     }
 

@@ -5,7 +5,7 @@ import java.util.*;
 import io.github.humbleui.skija.Canvas;
 import com.atom.lib.motion.FrameTime;
 /** Stable instance; node() produces data without recreating interaction state. */
-public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog, ActionButton {
+public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog, ActionButton, TextField {
     private final NodeId id;
     final ControlContext context;
     UiSession owner;
@@ -29,6 +29,9 @@ public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog,
     abstract void release(PointerEvent e,PresentationFrame frame);
     abstract void cancel(CancelReason reason);
     abstract boolean key(KeyEvent event);
+    /** Committed Unicode scalar; key events never synthesize printable text. */
+    boolean character(int codePoint){return false;}
+    boolean text(String value){boolean consumed=false;for(int cp:value.codePoints().toArray())consumed|=character(cp);return consumed;}
     abstract void paint(Canvas c,PresentationFrame f,ControlVisual v);
     float positionTarget(){return 0;}
     void terminate(CancelReason reason){if(owner!=null)owner.cancelControl(this,reason);else cancel(reason);}
@@ -36,7 +39,7 @@ public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog,
     void advance(FrameTime frame,boolean motion){
         double delta=frame.deltaSeconds();
         var timing=context.skin().motion();
-        hover=approach(hover,hovered?1:0,delta,timing.hover(),motion);
+        hover=approach(hover,hovered?1:0,delta,hovered?timing.hover():timing.hoverExit(),motion);
         press=approach(press,pressed?1:0,delta,timing.hover(),motion);
         position=approach(position,positionTarget(),delta,timing.toggle(),motion);
     }

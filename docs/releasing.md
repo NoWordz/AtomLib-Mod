@@ -1,67 +1,34 @@
-# Releasing AtomLib
+# Build and release
 
-AtomLib ships one jar per loader and Minecraft version. Each jar bundles the
-Java modules (core, runtime, ui), the matching Skija build with its Windows
-x64/ARM64 natives, LWJGL Yoga and its natives, and the optional design package.
-Nothing else is required at runtime.
-
-| Target | Artifact | Java |
-|---|---|---|
-| 1.20.1 Forge | atomlib-1.20.1-forge | 17 |
-| 1.21.1 Fabric | atomlib-1.21.1-fabric | 21 |
-| 1.21.1 NeoForge | atomlib-1.21.1-neoforge | 21 |
-
-## Version
-
-The version lives in gradle.properties as atomlib_version and appears in the
-jar name, the mod metadata and the published coordinate. It is currently a
-pre-release (0.x). Treat the public surface as:
-
-- stable within a minor version: the render bridge, Yoga layout, TextService,
-  FontRegistry and the design package;
-- free to change in a minor bump while the major version is 0.
-
-Inside Minecraft, normal semver is not enough: a loader refuses a mod built for
-another Minecraft version, and Forge/NeoForge compare declared dependency
-ranges. Keep the Minecraft version in the artifact id and bump the AtomLib
-version for every published build.
+The version source is `gradle.properties`. A 0.x release is not a blanket stable-API promise: preserve and check the intended public descriptors, and document any migration boundary. Minecraft version and loader remain part of each distribution identity.
 
 ## Build and verify
 
-~~~powershell
-$env:JAVA_HOME='C:/Program Files/Java/jdk-21.0.11'
-python tools/run_packaging.py platforms --jobs 1
-python tools/run_packaging.py verify
-python tools/run_packaging.py consumers --jobs 1
-~~~
+Use JDK 17 for common tests and Forge, and JDK 21 for Fabric/NeoForge. `tools/run_packaging.py` supports `JAVA17_HOME` and `JAVA21_HOME`. Supply an existing host font for the source tests.
 
-platforms builds and publishes the three jars to build/test-maven. verify
-re-checks each jar's contents and nested natives. consumers compiles the six
-standalone example projects against the published coordinates; it clears the
-Loom remap cache first, so a republished same-version jar cannot produce a
-false pass.
+```powershell
+.\gradlew.bat :core:test :runtime:test :ui:test --no-daemon "-PatomlibTestFont=C:/path/to/font.ttf"
+python tools/run_packaging.py all --jobs 1
+python tools/package_maven_input.py
+```
 
-## Publish
+The packaging command builds the three platform distributions, publishes their merged coordinates to `build/test-maven`, verifies JAR contents/natives, and checks six isolated example consumers plus pure Maven probes. Fabric consumer checks clear the relevant Loom remap cache before resolving a same-version input.
 
-The release workflow builds the three jars on windows-latest and attaches them
-to a draft GitHub release. Publishing to Maven or a mod store happens outside
-this repository and needs the owner's approval; the coordinates and metadata
-are already correct, so a store upload is a packaging step, not a code change.
+`package_maven_input.py` archives the local Maven tree and writes its checksum. Before running it for a release, ensure that tree contains the intended version and no unrelated historical artifacts.
 
-## Checklist before announcing a version
+## Publish to GitHub Releases
 
-1. atomlib_version bumped in gradle.properties.
-2. run_packaging.py platforms, verify and consumers all pass.
-3. Jar contents checked: intended controls and design packages present,
-   pack.mcmeta present, and natives registered with the target loader.
-4. Each consumer mod updates the pinned SHA-256 of the jar it ships against
-   (AtomChat keeps this in versions/atomlib.json).
-5. Consumers clear Loom's remapped_mods cache after a same-version republish.
-6. The three real clients start, open a screen and exit without a native leak.
-7. Release notes name the Minecraft and loader versions each jar targets.
+1. Check the current diff, HEAD and remote branch. Include only intended source, tests and maintained documentation; keep temporary plans, logs and review snapshots outside the commit.
+2. Keep `gradle.properties`, bilingual `CHANGELOG.md`, `RELEASE_NOTES.md`, README files and target metadata consistent. Extract the complete matching version section from `RELEASE_NOTES.md` into a temporary notes file, preserving both languages.
+3. Reuse valid verification only when the relevant source, dependencies, configuration and target are unchanged. Recheck current artifacts and required CI. Record game, hardware or compatibility coverage separately from offline checks; the release notes must not imply unperformed in-game validation.
+4. Commit the reviewed state, push the intended branch, and create/push the matching annotated tag. Verify that the remote tag resolves to that commit before creating the release with `gh release create --verify-tag`.
+5. Attach the Forge, Fabric and NeoForge installation JARs, the matching `atomlib-input-VERSION.zip`, and its `.sha256` file. The Maven archive is for developers and must not be presented as an installation mod.
+6. Read back the release, tag, body and uploaded asset digests; compare them with the local verified files. If a digest is unavailable, download the asset and compare its contents. Confirm the published state before announcing completion.
 
-## What is not covered yet
+The manual `release` workflow creates a draft with its selected label; it does not by itself establish that a final version has been published. Public Maven hosting and mod-store publication are separate distribution operations and are not configured by this guide.
 
-CI has run for previous commits; current-commit results must be checked separately. ARM64 hardware has not been tested, and dedicated
-servers must never load the client/native path. Do not call a build "tested"
-beyond what these steps actually executed.
+## Host upgrades and validation scope
+
+A consuming mod must select a compatible API/target and update any coordinate or artifact lock it maintains when it adopts a new release. Publishing AtomLib does not require editing consumer repositories or game instances.
+
+Test real clients, GUI scales, IME, renderer combinations, resource shutdown and supported hardware as coverage becomes available, and state exactly what was tested. ARM64 packaging alone is not game validation; dedicated servers must not initialize the client rendering/native path.

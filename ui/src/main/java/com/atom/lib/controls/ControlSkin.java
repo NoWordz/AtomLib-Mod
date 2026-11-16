@@ -5,6 +5,10 @@ import com.atom.lib.text.TextService;
 import io.github.humbleui.skija.Canvas;
 import java.util.Optional;
 public interface ControlSkin {
+    /** Optional new-frame hook; old custom skins remain binary compatible. Supply a separate mutable skin per session. */
+    default void beginAppearance(com.atom.lib.design.atomdefault.ThemeSnapshot theme,com.atom.lib.motion.MotionSpec motion){}
+    /** Whole-frame chrome/input appearance, when this skin participates in the new snapshot contract. */
+    default Optional<com.atom.lib.design.atomchat.AtomChatControlStyle> appearanceStyle(){return Optional.empty();}
     /** Empty retains the original duration-based toggle movement. */
     default Optional<ControlSpring> toggleSpring(){return Optional.empty();}
     /** The optional knob position can overshoot; the visual's colour weights remain bounded. */

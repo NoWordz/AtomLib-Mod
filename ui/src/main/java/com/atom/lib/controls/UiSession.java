@@ -13,6 +13,8 @@ public final class UiSession implements AutoCloseable {
     private Map<NodeId,Control> controlsById=Map.of();
     private final Map<Control,ControlTarget> targets=new IdentityHashMap<>();
     private final FocusState focus=new FocusState();
+    private Object textFocusToken=new Object();
+    private Control textFocusControl;
     private final InputDispatcher dispatcher=new InputDispatcher(this::topAt);
     private PresentationFrame displayed;
     private Set<Control> displayedInstances=Collections.newSetFromMap(new IdentityHashMap<>());
@@ -35,8 +37,12 @@ public final class UiSession implements AutoCloseable {
     }
     private ScrollViewport scroll;
     private boolean draggingScroll;
+    private com.atom.lib.motion.MotionSpec appearanceMotion;
+    private FrameTime appearanceTime;
+    /** Samples optional scrolling before layout. Policy and time belong to this session only. */
+    public void advanceAppearance(FrameTime time,com.atom.lib.motion.MotionSpec policy){requireOpen();appearanceTime=Objects.requireNonNull(time);appearanceMotion=Objects.requireNonNull(policy);if(scroll!=null)scroll.advance(time,policy);if(composite!=null)composite.child.advanceAppearance(time,policy);}
     private float scrollY,coordinateScale=1;
-    public void scrollViewport(ScrollViewport value){requireOpen();if(scroll!=value){cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll=value;}}
+    public void scrollViewport(ScrollViewport value){requireOpen();if(scroll!=value){cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll=value;if(scroll!=null&&appearanceTime!=null)scroll.advance(appearanceTime,appearanceMotion);}}
     public void prepareCoordinates(float scale){requireOpen();if(!Float.isFinite(scale)||scale<=0)throw new IllegalArgumentException("Invalid coordinate scale");if(scale!=coordinateScale){coordinateScale=scale;cancel(CancelReason.COORDINATE_SPACE_CHANGED);}}
     private final Map<NodeId,PointerTarget> modalTargets=new LinkedHashMap<>();
     private final Set<Integer> buttonsDown=new HashSet<>(),swallowedButtons=new HashSet<>();
@@ -116,9 +122,9 @@ public final class UiSession implements AutoCloseable {
         if(modal!=null)return;
         var previous=focus.current();
         focus.candidates(displayed==null?List.of():displayed.paintOrder().stream().filter(id->{var c=byId(id);return c!=null&&c.available()&&(visible(c)||(scroll!=null&&scroll.contains(id)));}).toList());
-        if(!Objects.equals(previous,focus.current())){swallowedKeys.addAll(keysDown);var old=byId(previous);if(old!=null)cancelControl(old,CancelReason.FOCUS_LOST);}
+        if(!Objects.equals(previous,focus.current())){textFocusToken=new Object();swallowedKeys.addAll(keysDown);var old=byId(previous);if(old!=null)cancelControl(old,CancelReason.FOCUS_LOST);}
     }
-    private void select(NodeId id){var previous=focus.current();if(Objects.equals(previous,id))return;swallowedKeys.addAll(keysDown);var c=byId(previous);if(c!=null)cancelControl(c,CancelReason.FOCUS_LOST);focus.select(id);}
+    private void select(NodeId id){var previous=focus.current();if(Objects.equals(previous,id))return;textFocusToken=new Object();swallowedKeys.addAll(keysDown);var c=byId(previous);if(c!=null)cancelControl(c,CancelReason.FOCUS_LOST);focus.select(id);}
     public InputResult pointer(PointerEvent event){
         requireOpen();Objects.requireNonNull(event);
         if(event.type()==PointerEvent.Type.PRESS)buttonsDown.add(event.button());
@@ -146,7 +152,7 @@ public final class UiSession implements AutoCloseable {
         if(draggingScroll){if(event.type()==PointerEvent.Type.MOVE){scroll.dragThumb(event.y()-scrollY);scrollY=event.y();}if((event.type()==PointerEvent.Type.RELEASE&&event.button()==0)||event.type()==PointerEvent.Type.CANCEL)draggingScroll=false;return InputResult.CONSUMED;}
         if(scroll!=null&&event.type()==PointerEvent.Type.PRESS&&event.button()==0&&scroll.thumb().height()>0&&scroll.thumb().contains(event.x(),event.y())){cancel(CancelReason.COORDINATE_SPACE_CHANGED);draggingScroll=true;scrollY=event.y();return InputResult.CONSUMED;}
         if(event.type()==PointerEvent.Type.CANCEL){boolean captured=dispatcher.captureOwner()!=null;cancel(CancelReason.FOCUS_LOST);return captured?InputResult.CONSUMED:InputResult.PASS;}
-        if(event.type()==PointerEvent.Type.PRESS&&event.button()==0){refreshFocus();var id=topAt(event.x(),event.y());if(id!=null){select(id);if(dispatcher.captureOwner()==null)cancelControl(byId(id),CancelReason.FOCUS_LOST);}}
+        if(event.type()==PointerEvent.Type.PRESS&&event.button()==0){refreshFocus();var id=topAt(event.x(),event.y());select(id);if(id!=null&&dispatcher.captureOwner()==null)cancelControl(byId(id),CancelReason.FOCUS_LOST);}
         return dispatcher.dispatch(event);
     }
     public InputResult key(KeyEvent event){
@@ -156,11 +162,34 @@ public final class UiSession implements AutoCloseable {
         if(composite!=null){var state=composite;if(state.closing){swallowedKeys.addAll(keysDown);return InputResult.CONSUMED;}if(event.key()==KeyEvent.Key.ESCAPE&&event.pressed()){closeModal(ModalCloseReason.CANCELLED);return InputResult.CONSUMED;}if(state.shown)state.child.key(event);return InputResult.CONSUMED;}
         if(modal!=null){if(modal.phase==ModalState.Phase.CLOSING)swallowedKeys.addAll(keysDown);modalKey(event,freshPress);return InputResult.CONSUMED;}
         if(event.key()==KeyEvent.Key.ESCAPE&&event.pressed()){boolean active=draggingScroll||controls.stream().anyMatch(Control::interacting);cancel(CancelReason.ESCAPE);return active?InputResult.CONSUMED:InputResult.PASS;}
-        if(event.key()==KeyEvent.Key.TAB){if(event.pressed()){var previous=focus.current();var id=focus.step(event.shift());if(!Objects.equals(previous,id)){swallowedKeys.addAll(keysDown);var c=byId(previous);if(c!=null)cancelControl(c,CancelReason.FOCUS_LOST);}if(id!=null&&scroll!=null&&scroll.contains(id))scroll.ensureVisible(displayed.box(id).border());}return InputResult.CONSUMED;}
+        if(event.key()==KeyEvent.Key.TAB){if(event.pressed()){var previous=focus.current();var id=focus.step(event.shift());if(!Objects.equals(previous,id)){textFocusToken=new Object();swallowedKeys.addAll(keysDown);var c=byId(previous);if(c!=null)cancelControl(c,CancelReason.FOCUS_LOST);}if(id!=null&&scroll!=null&&scroll.contains(id))scroll.ensureVisible(displayed.box(id).border());}return InputResult.CONSUMED;}
         var c=byId(focus.current());return c!=null&&c.available()&&c.key(event)?InputResult.CONSUMED:InputResult.PASS;
     }
-    public InputResult wheel(float x,float y,float dx,float dy){requireOpen();if(composite!=null){if(!composite.closing&&composite.shown)composite.child.wheel(x,y,dx,dy);return InputResult.CONSUMED;}if(modal!=null)return InputResult.CONSUMED;if(scroll==null||!scroll.bounds().contains(x,y)||dy==0)return InputResult.PASS;cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll.scrollBy(-dy*40);return InputResult.CONSUMED;}
-    public InputResult character(int codePoint){requireOpen();return modal==null&&composite==null?InputResult.PASS:InputResult.CONSUMED;}
+    public InputResult wheel(float x,float y,float dx,float dy){requireOpen();if(composite!=null){if(!composite.closing&&composite.shown)composite.child.wheel(x,y,dx,dy);return InputResult.CONSUMED;}if(modal!=null)return InputResult.CONSUMED;if(scroll==null||!scroll.bounds().contains(x,y)||dy==0)return InputResult.PASS;cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll.wheelBy(-dy*40);return InputResult.CONSUMED;}
+    private TextClipboard clipboard=TextClipboard.memory();
+    public TextClipboard clipboard(){return clipboard;}
+    public void clipboard(TextClipboard value){requireOpen();clipboard=Objects.requireNonNull(value);if(composite!=null)composite.child.clipboard(value);}
+    public InputResult text(String text){
+        requireOpen();Objects.requireNonNull(text);refreshFocus();
+        if(composite!=null){if(composite.shown&&!composite.closing)composite.child.text(text);return InputResult.CONSUMED;}
+        if(modal!=null)return InputResult.CONSUMED;
+        var c=byId(focus.current());return c!=null&&c.available()&&visible(c)&&c.text(text)?InputResult.CONSUMED:InputResult.PASS;
+    }
+    public InputResult character(int codePoint){
+        requireOpen();refreshFocus();
+        if(composite!=null){if(composite.shown&&!composite.closing)composite.child.character(codePoint);return InputResult.CONSUMED;}
+        if(modal!=null)return InputResult.CONSUMED;
+        if(!Character.isValidCodePoint(codePoint)||codePoint>=0xd800&&codePoint<=0xdfff||Character.isISOControl(codePoint))return InputResult.PASS;
+        var c=byId(focus.current());return c!=null&&c.available()&&visible(c)&&c.character(codePoint)?InputResult.CONSUMED:InputResult.PASS;
+    }
+    Object textInputTarget(){
+        requireOpen();refreshFocus();
+        if(composite!=null)return composite.shown&&!composite.closing?composite.child.textInputTarget():null;
+        if(modal!=null)return null;
+        var c=byId(focus.current());
+        if(c!=textFocusControl){textFocusControl=c;textFocusToken=new Object();}
+        return c instanceof TextField&&c.available()&&visible(c)?textFocusToken:null;
+    }
     public void hover(float x,float y){requireOpen();if(composite!=null){if(composite.shown&&!composite.closing)composite.child.hover(x,y);return;}if(scroll!=null)scroll.hover(x,y);var id=topAt(x,y);for(var c:controls)c.hovered=c.id().equals(id);}
     public void paint(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled){
         paintInternal(canvas,frame,viewport,time,motionEnabled,Map.of(),false);
@@ -204,7 +233,7 @@ public final class UiSession implements AutoCloseable {
                 finally{canvas.restoreToCount(count);}
             }
             if(entranceSaved>=0)canvas.restoreToCount(entranceSaved);
-            if(scroll!=null&&scroll.scrollbarVisible()&&scroll.thumb(frame).height()>0){var r=scroll.thumb(frame);try(var p=new io.github.humbleui.skija.Paint().setColor(0x88989ba5)){canvas.drawRRect(io.github.humbleui.types.RRect.makeXYWH(r.x(),r.y(),r.width(),r.height(),r.width()/2),p);}}
+            if(scroll!=null&&scroll.scrollbarVisible()&&scroll.thumb(frame).height()>0){var r=scroll.thumb(frame);try(var p=new io.github.humbleui.skija.Paint().setColor((Math.round(136*scroll.scrollbarOpacity())<<24)|0x989ba5)){canvas.drawRRect(io.github.humbleui.types.RRect.makeXYWH(r.x(),r.y(),r.width(),r.height(),r.width()/2),p);}}
             if(composite!=null){
                 var state=composite;
                 if(!frame.contains(state.dialog.id))throw new IllegalArgumentException("Visible composable modal missing from frame");
@@ -236,6 +265,7 @@ public final class UiSession implements AutoCloseable {
         // Cancellation callbacks can throw. Complete them before publishing any new hit boxes.
         Set<Control> nextInstances=Collections.newSetFromMap(new IdentityHashMap<>());nextInstances.addAll(controls);
         for(var c:controls)if(!visible(c,frame,nextInstances))cancelControl(c,CancelReason.REMOVED);
+        for(var c:controls)if(c instanceof TextField field)field.publishInputFrame();
         displayed=frame;displayedViewport=viewport;lastFrame=time.frameId();lastNow=time.nowNanos();
         if(scroll!=null)scroll.publish(frame);
         displayedInstances=nextInstances;
@@ -251,7 +281,7 @@ public final class UiSession implements AutoCloseable {
             if(clip.x()<0||clip.y()<0||clip.right()>viewport.width()+.01||clip.bottom()>viewport.height()+.01)throw new IllegalArgumentException("Clip outside viewport: "+id);
         }
         var root=f.unanimatedBorder(c.id());
-        if((scroll==null||!scroll.contains(f,c.id()))&&(root.bottom()>viewport.height()+.01||root.right()>viewport.width()+.01||root.x()<0||root.y()<0))throw new IllegalArgumentException("Control does not fit viewport: "+c.id());
+        if(!f.hasPresentationTransform(c.id())&&(scroll==null||!scroll.contains(f,c.id()))&&(root.bottom()>viewport.height()+.01||root.right()>viewport.width()+.01||root.x()<0||root.y()<0))throw new IllegalArgumentException("Control does not fit viewport: "+c.id());
     }
     void cancelControl(Control c,CancelReason reason){
         var old=cancelling;cancelling=Objects.requireNonNull(reason);
@@ -262,7 +292,7 @@ public final class UiSession implements AutoCloseable {
     // instead retain suppression until the held gesture actually ends.
     void resetPhysicalInputTracking(){keysDown.clear();swallowedKeys.clear();buttonsDown.clear();swallowedButtons.clear();}
     public void cancel(CancelReason reason){
-        requireOpen();if(draggingScroll)swallowedButtons.addAll(buttonsDown);draggingScroll=false;Throwable failure=null;
+        requireOpen();textFocusToken=new Object();if(draggingScroll)swallowedButtons.addAll(buttonsDown);draggingScroll=false;Throwable failure=null;
         for(var c:List.copyOf(controls))try{cancelControl(c,reason);}catch(RuntimeException|Error e){if(failure==null)failure=e;else failure.addSuppressed(e);}
         if(composite!=null&&reason!=CancelReason.MODAL_OPENED){
             try{closeModal(switch(reason){case FOCUS_LOST->ModalCloseReason.FOCUS_LOST;case COORDINATE_SPACE_CHANGED->ModalCloseReason.COORDINATE_SPACE_CHANGED;case CLOSED,REMOVED->ModalCloseReason.HOST_CLOSED;default->ModalCloseReason.CANCELLED;});}
@@ -324,7 +354,7 @@ public final class UiSession implements AutoCloseable {
     private void syncComposite(Composite state){
         var ids=new HashSet<NodeId>();for(var c:controls)ids.addAll(c.slots());
         for(var id:compositeLayoutIds(state.dialog))if(ids.contains(id))throw new IllegalArgumentException("Modal ID collides with base control: "+id);
-        state.child.setControls(state.dialog.controls());
+        state.child.clipboard(clipboard);state.child.setControls(state.dialog.controls());
     }
     public void closeModal(ModalCloseReason reason){
         requireOpen();Objects.requireNonNull(reason);var state=composite;if(state==null||state.closing)return;

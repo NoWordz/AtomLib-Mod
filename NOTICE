@@ -5,6 +5,12 @@ New AtomLib-authored material is licensed under the Apache License, Version 2.0.
 Third-party material and permitted AtomChat adaptations retain their own licenses.
 This NOTICE does not relicense AtomChat, Tuui, third-party libraries, or assets.
 
+Design acknowledgements (0.5.0):
+ar_zhe / Module Shop: adaptive grids, tables and input/interaction design reference.
+Muonium Player: rendering ideas and render-state/frame-cost investigation reference.
+The new collection and editing implementations are independently written from
+AtomLib's contracts; no Module Shop implementation or asset is included.
+
 AtomLib mod logo (2026-11-01):
 User-supplied branding image provided for use as the AtomLib mod logo.
 Original image and processing record: assets/branding/logo-original.png and logo.json.

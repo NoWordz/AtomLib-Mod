@@ -20,6 +20,10 @@ public final class ControlsRecipe extends Screen {
     private long frameId,lastNanos;
     public ControlsRecipe(UiSession session,Painter painter,Runnable dispose){
         super(Component.literal("AtomLib controls"));this.session=session;input=new ControlScreenAdapter(session);this.painter=painter;this.dispose=dispose;
+        input.clipboard(new TextClipboard(){
+            public String read(){return net.minecraft.client.Minecraft.getInstance().keyboardHandler.getClipboard();}
+            public void write(String text){net.minecraft.client.Minecraft.getInstance().keyboardHandler.setClipboard(text);}
+        });
     }
     @Override public void render(GuiGraphics graphics,int x,int y,float partial){
         var window=minecraft.getWindow();float ratio=(float)window.getWidth()/window.getGuiScaledWidth();
@@ -36,14 +40,21 @@ public final class ControlsRecipe extends Screen {
     @Override public boolean mouseDragged(double x,double y,int b,double dx,double dy){return input.drag(x,y,b,dx,dy)||super.mouseDragged(x,y,b,dx,dy);}
     @Override public boolean mouseReleased(double x,double y,int b){return input.release(x,y,b)||super.mouseReleased(x,y,b);}
     @Override public boolean mouseScrolled(double x,double y,double delta){return input.scroll(x,y,0,delta)||super.mouseScrolled(x,y,delta);}
-    @Override public boolean charTyped(char c,int modifiers){return input.character(c)||super.charTyped(c,modifiers);}
+    @Override public boolean charTyped(char c,int modifiers){
+        boolean shortcut=(modifiers&(GLFW.GLFW_MOD_CONTROL|GLFW.GLFW_MOD_SUPER))!=0&&(modifiers&GLFW.GLFW_MOD_ALT)==0;
+        return (!shortcut&&input.character(c))||super.charTyped(c,modifiers);
+    }
     @Override public boolean keyPressed(int key,int scan,int modifiers){return input.key(event(key,true,modifiers))||super.keyPressed(key,scan,modifiers);}
     @Override public boolean keyReleased(int key,int scan,int modifiers){return input.key(event(key,false,modifiers))||super.keyReleased(key,scan,modifiers);}
     @Override public void removed(){try{input.removed();}finally{try{session.close();}finally{dispose.run();}}super.removed();}
     private KeyEvent event(int key,boolean down,int modifiers){
         var mapped=switch(key){case GLFW.GLFW_KEY_TAB->KeyEvent.Key.TAB;case GLFW.GLFW_KEY_ESCAPE->KeyEvent.Key.ESCAPE;
             case GLFW.GLFW_KEY_LEFT->KeyEvent.Key.LEFT;case GLFW.GLFW_KEY_RIGHT->KeyEvent.Key.RIGHT;case GLFW.GLFW_KEY_UP->KeyEvent.Key.UP;case GLFW.GLFW_KEY_DOWN->KeyEvent.Key.DOWN;
-            case GLFW.GLFW_KEY_HOME->KeyEvent.Key.HOME;case GLFW.GLFW_KEY_END->KeyEvent.Key.END;case GLFW.GLFW_KEY_ENTER,GLFW.GLFW_KEY_KP_ENTER->KeyEvent.Key.ENTER;case GLFW.GLFW_KEY_SPACE->KeyEvent.Key.SPACE;default->KeyEvent.Key.OTHER;};
-        return new KeyEvent(mapped,down,(modifiers&GLFW.GLFW_MOD_SHIFT)!=0,(modifiers&GLFW.GLFW_MOD_CONTROL)!=0,(modifiers&GLFW.GLFW_MOD_ALT)!=0);
+            case GLFW.GLFW_KEY_HOME->KeyEvent.Key.HOME;case GLFW.GLFW_KEY_END->KeyEvent.Key.END;case GLFW.GLFW_KEY_ENTER,GLFW.GLFW_KEY_KP_ENTER->KeyEvent.Key.ENTER;case GLFW.GLFW_KEY_SPACE->KeyEvent.Key.SPACE;
+            case GLFW.GLFW_KEY_BACKSPACE->KeyEvent.Key.BACKSPACE;case GLFW.GLFW_KEY_DELETE->KeyEvent.Key.DELETE;
+            case GLFW.GLFW_KEY_A->KeyEvent.Key.A;case GLFW.GLFW_KEY_C->KeyEvent.Key.C;case GLFW.GLFW_KEY_V->KeyEvent.Key.V;case GLFW.GLFW_KEY_X->KeyEvent.Key.X;case GLFW.GLFW_KEY_Z->KeyEvent.Key.Z;case GLFW.GLFW_KEY_Y->KeyEvent.Key.Y;default->KeyEvent.Key.OTHER;};
+        boolean alt=(modifiers&GLFW.GLFW_MOD_ALT)!=0;
+        boolean shortcut=((modifiers&GLFW.GLFW_MOD_CONTROL)!=0||System.getProperty("os.name","").startsWith("Mac")&&(modifiers&GLFW.GLFW_MOD_SUPER)!=0)&&!alt;
+        return new KeyEvent(mapped,down,(modifiers&GLFW.GLFW_MOD_SHIFT)!=0,shortcut,alt);
     }
 }

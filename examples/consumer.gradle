@@ -65,7 +65,7 @@ tasks.register('writeDependencyEvidence') {
     }
 }
 tasks.register('verifyConsumer', Exec) {
-    dependsOn 'build', 'writeDependencyEvidence', 'paragraphConsumerProbe'
+    dependsOn 'build', 'writeDependencyEvidence', 'paragraphConsumerProbe', 'sessionConsumerProbe'
     workingDir repoRoot
     commandLine((findProperty('pythonExecutable') ?: 'python').toString(), 'tools/verify_consumers.py',
         '--project', projectDir.absolutePath, '--target', atomlibTargetKey,
@@ -75,4 +75,10 @@ tasks.register('paragraphConsumerProbe', JavaExec) {
     dependsOn tasks.named('paragraphProbeClasses')
     classpath = sourceSets.paragraphProbe.runtimeClasspath
     mainClass = 'com.atom.example.verification.ParagraphConsumerProbe'
+}
+
+tasks.register('sessionConsumerProbe', JavaExec) {
+    dependsOn tasks.named('paragraphProbeClasses')
+    classpath = sourceSets.paragraphProbe.runtimeClasspath
+    mainClass = 'com.atom.example.verification.SessionConsumerProbe'
 }

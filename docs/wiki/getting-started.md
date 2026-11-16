@@ -1,18 +1,19 @@
 # Getting started
 
-The `0.3.0` coordinate below refers to a local build; the latest public release
-is still `0.1.0-beta` beta3.
+The coordinate below matches version `0.5.0`. Distribution JARs and the local
+Maven input archive are available from [Releases](https://github.com/NoWordz/AtomLib-Mod/releases).
 
 Add the AtomLib platform JAR to the host's `mods/` folder, then declare its
-published coordinate in development. Maven publication is not configured in
-this repository; `build/test-maven` is the explicit local input used by tests.
+matching coordinate in development. There is no hosted public Maven repository.
+Extract `atomlib-input-0.5.0.zip` into a directory and use that directory as the
+Maven repository URL below, or build `build/test-maven` locally.
 
 ```groovy
 repositories { maven { url = uri('/absolute/path/to/AtomLib/build/test-maven') }
              mavenCentral() }
 dependencies {
     // Fabric: modImplementation; Forge/NeoForge: implementation
-    implementation 'com.atom.lib:atomlib-1.20.1-forge:0.3.0'
+    implementation 'com.atom.lib:atomlib-1.20.1-forge:0.5.0'
 }
 ```
 

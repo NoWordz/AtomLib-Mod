@@ -8,8 +8,16 @@ import java.util.Locale;
 import java.util.Objects;
 
 /** ICU boundaries are UTF-16 offsets; they do not control Skia Paragraph line breaking. */
-final class UnicodeBoundaries {
+public final class UnicodeBoundaries {
     private UnicodeBoundaries() {}
+
+    /** Plain TextService-compatible graphemes, without requiring the opt-in ICU runtime. */
+    public static List<Integer> graphemes(String text) {
+        var matcher = java.util.regex.Pattern.compile("\\X").matcher(Objects.requireNonNull(text));
+        var result = new ArrayList<Integer>();result.add(0);
+        while(matcher.find())result.add(matcher.end());
+        return List.copyOf(result);
+    }
 
     static List<Integer> lines(String text, Locale locale) {
         return collect(BreakIterator.getLineInstance(Objects.requireNonNull(locale)), text);

@@ -1,6 +1,6 @@
 # Quickstart: build a client screen
 
-> 下文的 `0.3.0` 坐标指本地构建；该版本尚未发布。公开 beta3 仍为 `0.1.0-beta`，不包含新控件。本地控件接线另见 [controls](controls.md)及三端 `examples/a/<target>/.../ControlsRecipe.java`。完整 pointer/key-up/wheel/char/window-focus/removed 转发均为库优先，不能只抄 press/release 或再次乘像素比。
+下文使用 `0.5.0`；安装包与 Maven 输入包见 [Releases](https://github.com/NoWordz/AtomLib-Mod/releases)。新界面优先使用 `AtomDefault.createSession(runtime)`，每窗口保留一个实例，在 `beginFrame` 后布局与绘制，并在移除时关闭；完整接线见 [隔离会话与编辑/容器](sessions.md)和可编译的 `examples/a/.../AppearanceRecipe.java`。完整转发 pointer/key-up/wheel/char/window-focus/removed，不能只抄 press/release 或再次乘像素比。
 
 This is the shortest path from an empty mod to a painted Skija screen. The
 compiled reference is examples/a (design package) and examples/b (raw Skija);
@@ -22,7 +22,7 @@ Declare it in development against the same coordinate:
 repositories { maven { url = uri('/absolute/path/to/AtomLib/build/test-maven') } }
 dependencies {
     // Fabric: modImplementation; Forge and NeoForge: implementation
-    implementation 'com.atom.lib:atomlib-1.20.1-forge:0.3.0'
+    implementation 'com.atom.lib:atomlib-1.20.1-forge:0.5.0'
 }
 ~~~
 
@@ -161,10 +161,10 @@ a screen closes; AtomLib releases it on client shutdown.
 
 ## Optional: the AtomChat look
 
-Import com.atom.lib.design.atomchat for UiTokens, SkiaDraw, UiCards and
-AppIcons. Without a host the tokens use AtomChat's shipped defaults; call
-Design.host(DesignHost) to feed your own accent, corner radius, card tint and
-panel colours. See [design-package.md](design-package.md).
+Use `AtomDefault.createSession(runtime)` for isolated theme/motion state,
+`frame.card(...)` for explicit snapshot-bound drawing, or the session's
+`ControlContext` for controls. `Design.host` remains a process-global legacy
+compatibility path. See [sessions](sessions.md) and [design-package](design-package.md).
 
 
 可组合模态的稳定控件、滚动和关闭示例见 [controls.md](controls.md#可组合模态)。当前源码候选也包含原版物品图标适配；真实游戏验证仍待完成。

@@ -6,7 +6,7 @@ import java.util.*;
 
 /** Explicit-clock entrance for one page or its initially visible item roots. */
 public final class PageEntrance {
-    private final double duration,stagger;
+    private final double duration,stagger,maxStagger;
     private final float distance;
     private List<NodeId> roots=List.of();
     private long started,lastFrame=Long.MIN_VALUE,lastNow=Long.MIN_VALUE;
@@ -16,9 +16,14 @@ public final class PageEntrance {
     private Map<NodeId,EntrancePose> lastSample=Map.of();
 
     public PageEntrance(double durationSeconds,double staggerSeconds,float distance) {
+        this(durationSeconds,staggerSeconds,distance,Double.MAX_VALUE);
+    }
+    /** Caps total stagger for large initially visible batches, preserving the legacy constructor. */
+    public PageEntrance(double durationSeconds,double staggerSeconds,float distance,double maxStaggerSeconds) {
         if(!Double.isFinite(durationSeconds)||durationSeconds<=0||!Double.isFinite(staggerSeconds)||staggerSeconds<0||!Float.isFinite(distance))
             throw new IllegalArgumentException("Invalid entrance parameters");
-        duration=durationSeconds;stagger=staggerSeconds;this.distance=distance;
+        if(!Double.isFinite(maxStaggerSeconds)||maxStaggerSeconds<0)throw new IllegalArgumentException("Invalid stagger cap");
+        duration=durationSeconds;stagger=staggerSeconds;this.distance=distance;maxStagger=maxStaggerSeconds;
     }
     /** The caller changes business pages immediately and passes only roots visible at that moment. */
     public void start(FrameTime frame,List<NodeId> visibleRoots) {
@@ -34,7 +39,7 @@ public final class PageEntrance {
         double elapsed=((double)frame.nowNanos()-started)/1_000_000_000d;
         var result=new LinkedHashMap<NodeId,EntrancePose>();boolean complete=true;
         for(int i=0;i<roots.size();i++){
-            double t=Math.max(0,Math.min(1,(elapsed-i*stagger)/duration));
+            double t=Math.max(0,Math.min(1,(elapsed-Math.min(maxStagger,i*stagger))/duration));
             float progress=(float)easeOut(t);
             result.put(roots.get(i),new EntrancePose(0,distance*(1-progress),progress));
             if(t<1)complete=false;

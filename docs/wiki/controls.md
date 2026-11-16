@@ -1,5 +1,7 @@
 # 可选控件与设置页面材料（本地候选）
 
+0.5 新界面使用 `AtomDefault.createSession`；单行/多行/数值输入、主题/动效选择与预览、虚拟网格/列表见 [会话与通用前端能力](sessions.md)。下文保留现有控件与旧候选的 API 说明；历史构建路径不代表当前 0.5.0 产物。
+
 ## 宿主按钮：统一字号和居中
 
 使用 `AtomChatControlSkin` 或 `AtomDefault.skin()` 时，普通、危险和分段按钮的文字角色统一为 `AtomChatFonts.BODY` 与 `UiTokens.FONT_BUTTON`；无图标按钮的标签布局框由 Yoga 在按钮内水平、垂直居中。先注册默认字体与 `AtomChatFonts`，再建立 `TextService`、皮肤和 `ControlContext`。宿主创建 `ActionButton`、提供固定或自适应的外层 `LayoutStyle`，并把按钮登记到 `UiSession`；布局后调用 `session.paint`，输入交给 session 或 `ControlScreenAdapter`。完整可运行的宿主组合、实际光栅绘制和点击见 `ui/src/test/java/com/atom/lib/host/CenteredButtonHostTest.java`。

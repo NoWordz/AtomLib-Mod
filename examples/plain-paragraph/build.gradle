@@ -18,7 +18,13 @@ dependencies {
 }
 sourceSets.main.java.srcDir('../verification')
 tasks.register('probe', JavaExec) {
-    dependsOn tasks.named('classes')
+    dependsOn tasks.named('classes'), tasks.named('sessionProbe')
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.atom.example.verification.ParagraphConsumerProbe'
+}
+
+tasks.register('sessionProbe', JavaExec) {
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.atom.example.verification.SessionConsumerProbe'
 }

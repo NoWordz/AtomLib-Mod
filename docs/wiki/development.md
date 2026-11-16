@@ -2,7 +2,7 @@
 
 ## 获取与构建
 
-当前仓库的 `gradle.properties` 定义 `0.3.0`，它仍是本地候选。公共 beta3 的 API 和产物不能等同于当前工作树；尚无公共 Maven 仓库。用目标版本和加载器分别构建本地 Maven 输入，具体坐标与安装步骤见 [getting started](getting-started.md)。两个独立宿主样例位于仓库的 `examples/a` 和 `examples/b`。
+当前版本为 `0.5.0`，版本号正本是 `gradle.properties`。安装 JAR 与本地 Maven 输入包见 [Releases](https://github.com/NoWordz/AtomLib-Mod/releases)，尚无托管的公共 Maven 仓库。坐标与安装步骤见 [getting started](getting-started.md)。两个独立宿主样例位于 `examples/a` 和 `examples/b`，新会话与输入接线分别见 `AppearanceRecipe` 和各平台 `ControlsRecipe`。
 
 在仓库根目录使用 JDK 17，并提供本机存在的测试字体：
 
