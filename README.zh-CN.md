@@ -80,7 +80,7 @@ python tools/run_packaging.py all --jobs 1
 | 贡献者 / 项目 | 贡献 |
 | --- | --- |
 | [ar_zhe / Module Shop](https://github.com/Ar-Zhe/Module-Shop) | 自适应网格、表格、输入适配与交互边界的设计参考。 |
-| Muonium Player | 渲染思路，以及渲染状态捕获与帧成本研究的参考。 |
+| [Muonium Player](https://github.com/zihe114514/MuoniumPlayer-multiversion) | 渲染思路，以及渲染状态捕获与帧成本研究的参考。 |
 | [AtomChat](https://github.com/NoWordz/AtomChat-Mod) | 获准采用的 UI 原语、主题配色与交互设计。 |
 | [HumbleUI / Skija](https://github.com/HumbleUI/Skija)、[Yoga](https://www.yogalayout.dev/)、[LWJGL](https://www.lwjgl.org/) | 绘制、布局与原生绑定。 |
 

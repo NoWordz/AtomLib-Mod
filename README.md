@@ -80,7 +80,7 @@ python tools/run_packaging.py all --jobs 1
 | Contributor / project | Contribution |
 | --- | --- |
 | [ar_zhe / Module Shop](https://github.com/Ar-Zhe/Module-Shop) | Design reference for adaptive grids, tables, input adaptation and interaction boundaries. |
-| Muonium Player | Rendering ideas and reference for investigating render-state capture and frame cost. |
+| [Muonium Player](https://github.com/zihe114514/MuoniumPlayer-multiversion) | Rendering ideas and reference for investigating render-state capture and frame cost. |
 | [AtomChat](https://github.com/NoWordz/AtomChat-Mod) | Permitted UI primitives, theme palettes and interaction design. |
 | [HumbleUI / Skija](https://github.com/HumbleUI/Skija), [Yoga](https://www.yogalayout.dev/), [LWJGL](https://www.lwjgl.org/) | Drawing, layout and native bindings. |
 
