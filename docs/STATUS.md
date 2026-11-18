@@ -1,14 +1,29 @@
 # AtomLib status
 
-**Version 0.5.0** · [Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.5.0) · [Integration guide](wiki/sessions.md)
+**公开稳定版 0.5.0；本地 0.6.0 为未完成开发检查点。** · [0.5.0 Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.5.0) · [Integration guide](wiki/sessions.md)
 
-## 当前能力
+## 2026-11-18 前端契约锁收口，未完成
+
+用户不再等待继续实施，本轮保存现有成果并停止续作。唯一实施代理已关闭，没有本任务后台检查。这里的提交是本地开发检查点，不是完整 0.6.0、正式发布或可直接交用户使用的成品。
+
+- 已有：族群及角色契约、批准／候选区分、源码与资源／实现依赖检查、严格会话、单位与音效绑定、构建检查器及 Maven 分发。阶段二仅小型完整场景闭合。
+- 真实 AtomChat：原有设置历史页和托管页只接入所选路由的 Yoga 行布局；托管开关严格组件已通过单独集成验证，但尚未由真实页面路由调用。
+- 核心未完成：分组／容器及完整两页模板、所有编辑／交互／音效的正式绑定、完整场景及生产 CI 门。不能承诺现在设计新页面时所有越界与遗漏都会被拦住。
+- 未验收：完整独立审查、指定游戏窗口、设备听感。没有推送、发布、部署或启动游戏。
+
+沿用 11-18 12:29 的 core44 / UI196 / checker61 共301项通过记录；后续相关增量另有三端构建、实际组件测试及 Java17／21 各19项隔离消费者正反例。不是本轮重跑，也不是完整实机认证。源码快照核对与当前任务文件一致；原四处渲染桥 WIP 不纳入本轮提交。
+
+最新候选是七模块 Maven 输入，含三端 Lib JAR，不含按本轮修改重建的 AtomChat 游戏包；整个 ZIP 不能放入 mods。候选、源码快照及验证历史归档在本机 D:/AtomLib-Backups/2026-11-18-fcl-closeout/；原 build 路径清理后需从归档按原路径取回。
+
+继续工作先读[交付检查点](verification/2026-11-18-frontend-contract-lock-delivery-checkpoint.md)、[阶段三记录](verification/2026-11-18-frontend-contract-lock-stage-three.md)和[第二版方案](superpowers/plans/2026-11-17-v060-frontend-contract-lock.md)。需要用户重新授权继续实施；不要重选已认可的原设置页或重开阶段一探针。
+
+## 已发布 0.5.0 的能力
 
 提供按窗口隔离的外观会话、同帧主题快照、独立动效、预览选择与局部反馈；新增单行/多行/数值编辑、三端输入和剪贴板适配，以及固定高度虚拟网格/表格。宿主负责页面路由、数据、排序执行与持久化。
 
 新会话不读取或安装旧的全局 Design 状态；旧 0.4 公共符号及全局兼容路径保留，旧调用不自动获得隔离。README 和中文 README 均有鸣谢表，列入 ar_zhe / Module Shop 与 Muonium Player。
 
-## 已完成的本地验证
+## 0.5.0 历史本地验证
 
 | 检查 | 结果与范围 |
 | --- | --- |
@@ -20,7 +35,7 @@
 
 上述结果不等于全部宿主或真实游戏运行认证。CI 状态请查看对应提交的 [Actions](https://github.com/NoWordz/AtomLib-Mod/actions)。
 
-## 未覆盖范围
+## 0.5.0 未覆盖范围
 
 真实游戏中文输入法提交与组字、视觉动效、GUI 缩放、加载器/第三方渲染组合、长期 GPU/原生资源生命周期与 Windows ARM64 仍需实机验证。Linux/macOS 客户端原生依赖未打包；完整 bidi、富文本编辑和可选 Windows 候选窗定位未实现。
 

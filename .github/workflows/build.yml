@@ -26,7 +26,7 @@ jobs:
       - name: Pure-Java contract tests
         run: |
           chmod +x gradlew
-          ./gradlew :core:test --no-daemon --console=plain
+          ./gradlew :core:test :frontend-checker:test --no-daemon --console=plain
       - name: Verifier self-tests
         run: |
           python3 tools/test_verify_artifacts.py
@@ -51,6 +51,53 @@ jobs:
           $testFont='C:\Windows\Fonts\msyh.ttc'
           if (-not (Test-Path $testFont)) { $testFont='C:\Windows\Fonts\arial.ttf' }
           .\gradlew.bat :runtime:test :ui:test "-PatomlibTestFont=$testFont" --no-daemon --console=plain
+      - name: Strict native scene, independent legacy path and missing-hover mutant
+        shell: pwsh
+        run: |
+          $testFont='C:\Windows\Fonts\msyh.ttc'
+          if (-not (Test-Path $testFont)) { $testFont='C:\Windows\Fonts\arial.ttf' }
+          $classpathOutput=Join-Path $pwd 'build/frontend-contract-lock/native-scene-classpath.txt'
+          .\gradlew.bat frontendProbeClasspath -I tools/frontend-contract-lock/probe-classpath.init.gradle "-PfrontendProbeClasspathOutput=$classpathOutput" --no-daemon --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/frontend-contract-lock/verify_strict_scenario.py --java-home "$env:JAVA_HOME" --font "$testFont"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-native-scenes
+          path: build/frontend-contract-lock/native-scene-*/
+          if-no-files-found: error
+
+  frontend-consumers:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [17, 21]
+    steps:
+      - uses: actions/checkout@v7
+      - id: buildjava
+        uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: "17" }
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Isolated Maven source, resource and executed scene acceptance
+        shell: pwsh
+        run: |
+          $consumerHome=$env:JAVA_HOME
+          $env:JAVA_HOME='${{ steps.buildjava.outputs.path }}'
+          .\gradlew.bat :core:publishMavenJavaPublicationToTestRepository :frontend-checker:publishMavenJavaPublicationToTestRepository --no-daemon --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/frontend-contract-lock/verify_consumer.py --java-home "$consumerHome" --language-level ${{ matrix.java }} --protocol 2
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-consumer-java${{ matrix.java }}
+          path: build/frontend-contract-lock/consumer-*/
+          if-no-files-found: error
 
   hidden-gl:
     # Windows runners have no OpenGL driver beyond GDI Generic 1.1, so a 3.3

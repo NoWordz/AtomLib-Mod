@@ -1,3 +1,5 @@
 pluginManagement { repositories { gradlePluginPortal(); mavenCentral() } }
 rootProject.name = 'atomlib'
 include 'core', 'runtime', 'ui', 'probes:yoga'
+include 'frontend-checker'
+project(':frontend-checker').projectDir = file('build-tools/frontend-checker')

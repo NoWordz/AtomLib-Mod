@@ -72,7 +72,10 @@ if (!project.hasProperty('atomlibTargetKey')) {
                     from(module.sourceSets.main.output)
                 }
             }
-            tasks.named('sourcesJar') { from(module.sourceSets.main.allSource) }
+            tasks.named('sourcesJar') {
+                dependsOn module.tasks.named('classes')
+                from(module.sourceSets.main.allSource)
+            }
             tasks.named('javadoc') {
                 source(module.sourceSets.main.allJava)
                 classpath += module.sourceSets.main.compileClasspath + module.sourceSets.main.output

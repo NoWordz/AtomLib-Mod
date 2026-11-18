@@ -8,9 +8,13 @@ import static org.lwjgl.util.yoga.Yoga.*;
 
 /** One view owns one engine. Only the creating thread may access its native tree. */
 public final class YogaLayoutEngine implements LayoutEngine {
+    public enum Precision { DEVICE_PIXELS,FRACTIONAL }
+    public YogaLayoutEngine(){this(Precision.DEVICE_PIXELS);}
+    public YogaLayoutEngine(Precision precision){this.precision=Objects.requireNonNull(precision);config=YGConfigNew();}
     static { YogaNatives.ensure(); }
     private final Thread thread=Thread.currentThread();
-    private final long config=YGConfigNew();
+    private final long config;
+    private final Precision precision;
     private final Map<NodeId,Entry> entries=new LinkedHashMap<>();
     private LayoutTree previous;
     private Viewport viewport;
@@ -120,7 +124,7 @@ public final class YogaLayoutEngine implements LayoutEngine {
                 YGNodeStyleSetMargin(p,YGEdgeBottom,childMargin.bottom()+(node.style().direction()==LayoutStyle.Direction.COLUMN?gap:0));
             }
         }
-        YGConfigSetPointScaleFactor(config,nextViewport.pixelsPerUnit());
+        YGConfigSetPointScaleFactor(config,precision==Precision.FRACTIONAL?0:nextViewport.pixelsPerUnit());
         // Yoga keeps per-node cached layouts; a new point scale factor only
         // takes effect once the subtree is dirty again, so the tree-wide
         // dirty must reach container nodes too (YGNodeMarkDirty cannot: it

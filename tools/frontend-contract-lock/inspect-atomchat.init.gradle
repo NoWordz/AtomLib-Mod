@@ -1,0 +1,12 @@
+// Read-only task: emits inputs into AtomLib's probe directory, not AtomChat sources.
+gradle.projectsEvaluated {
+    rootProject.tasks.register('fclObserveInputs') {
+        doLast {
+            def target = new File(rootProject.property('fclObservationOutput').toString())
+            target.mkdirs()
+            def main = rootProject.sourceSets.main
+            new File(target, 'sources.txt').setText(main.allJava.files.sort().collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+            new File(target, 'classpath.txt').setText(main.compileClasspath.files.sort().collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+        }
+    }
+}

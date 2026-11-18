@@ -7,6 +7,14 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class YogaLayoutEngineTest {
+    @Test void fractionalFrontendLayoutPreservesExistingAnimationCoordinatesWithoutChangingDeviceRounding(){
+        var style=LayoutStyle.column().size(Length.points(37.5f),Length.points(10.125f)).flex(0,0,Length.auto());
+        var tree=new LayoutTree(node("root",LayoutStyle.column(),node("first",style),node("second",style)));
+        try(var fractional=new YogaLayoutEngine(YogaLayoutEngine.Precision.FRACTIONAL);var device=new YogaLayoutEngine()){
+            for(float density:new float[]{1,2,3}){var snapshot=fractional.layout(tree,new Viewport(40,100,density));assertEquals(10.125f,snapshot.box(new NodeId("first")).border().height());assertEquals(10.125f,snapshot.box(new NodeId("second")).border().y());}
+            assertEquals(10f,device.layout(tree,new Viewport(40,100,1)).box(new NodeId("second")).border().y());
+        }
+    }
     @Test void failedStructuralOrMeasureModeChangeCannotReuseSuccessfulSnapshotAgainstChangedNativeTree() {
         for(boolean sameId:new boolean[]{false,true})try(var engine=new YogaLayoutEngine()) {
             var style=LayoutStyle.column();

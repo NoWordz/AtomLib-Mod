@@ -1,1 +1,37 @@
 // Pure Java contracts: deliberately no Minecraft, Skija or Yoga dependency.
+// A mechanism stamp is common to standalone and all three hosts. It is generated
+// from the library's actual implementation inputs, never maintained as a version label.
+def mechanismRoot = projectDir.parentFile
+def mechanismInputs = fileTree(mechanismRoot) {
+    include 'core/src/main/**', 'runtime/src/main/**', 'ui/src/main/**'
+    include 'platforms/shared/src/main/**', 'platforms/1.20.1-forge/src/main/**'
+    include 'platforms/1.21.1-fabric/src/main/**', 'platforms/1.21.1-neoforge/src/main/**'
+    include 'core/build.gradle', 'runtime/build.gradle', 'ui/build.gradle'
+    include 'build.gradle', 'gradle.properties', 'gradle/*.gradle', 'versions/*.json', 'versions/*.properties'
+    include 'platforms/*/build.gradle', 'platforms/*/settings.gradle'
+}
+def mechanismOutput = layout.buildDirectory.dir('generated/frontend-mechanism')
+def generateMechanism = tasks.register('generateFrontendMechanism') {
+    inputs.files(mechanismInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(mechanismOutput)
+    doLast {
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        def entries = mechanismInputs.files.collect { f ->
+            [path: mechanismRoot.toPath().relativize(f.toPath()).toString().replace('\\','/'), file: f]
+        }.sort { a,b -> a.path <=> b.path }
+        entries.each { entry ->
+            byte[] bytes = entry.file.bytes
+            if (entry.path ==~ /.*\.(java|gradle|properties|json|vert|frag|glsl|svg|txt|md)$/) {
+                bytes = new String(bytes, java.nio.charset.StandardCharsets.UTF_8).replace('\r\n','\n').getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            }
+            byte[] name = entry.path.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            digest.update(java.nio.ByteBuffer.allocate(4).putInt(name.length).array()); digest.update(name)
+            digest.update(java.nio.ByteBuffer.allocate(8).putLong(bytes.length).array()); digest.update(bytes)
+        }
+        def output = mechanismOutput.get().file('META-INF/atomlib/fcl/mechanism.sha256').asFile
+        output.parentFile.mkdirs(); output.setText(digest.digest().encodeHex().toString()+'\n','UTF-8')
+    }
+}
+sourceSets.main.resources.srcDir(mechanismOutput)
+tasks.named('processResources') { dependsOn generateMechanism }
+tasks.matching { it.name == 'sourcesJar' }.configureEach { dependsOn generateMechanism }

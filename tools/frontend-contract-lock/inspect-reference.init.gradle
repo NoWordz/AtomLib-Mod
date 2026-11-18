@@ -1,0 +1,15 @@
+// Read-only query. All exported inputs go to the caller's AtomLib evidence path.
+gradle.projectsEvaluated {
+    rootProject.tasks.register('fclReferenceInputs') {
+        doLast {
+            def out = new File(rootProject.property('fclObservationOutput').toString())
+            out.mkdirs()
+            def main = rootProject.sourceSets.main
+            def test = rootProject.sourceSets.test
+            new File(out, 'sources.txt').setText(main.allJava.files.sort().collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+            new File(out, 'compile-classpath.txt').setText(main.compileClasspath.files.sort().collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+            new File(out, 'runtime-classpath.txt').setText(test.runtimeClasspath.files.collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+            new File(out, 'outputs.txt').setText(main.output.files.collect { it.absolutePath }.join('\n') + '\n', 'UTF-8')
+        }
+    }
+}

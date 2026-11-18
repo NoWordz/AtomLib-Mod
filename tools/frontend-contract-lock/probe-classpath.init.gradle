@@ -1,0 +1,12 @@
+gradle.projectsEvaluated {
+    def ui = gradle.rootProject.project(':ui')
+    def checker = gradle.rootProject.project(':frontend-checker')
+    gradle.rootProject.tasks.register('frontendProbeClasspath') {
+        dependsOn ui.tasks.named('testClasses'),checker.tasks.named('classes')
+        doLast {
+            def output = new File(gradle.rootProject.property('frontendProbeClasspathOutput').toString())
+            output.parentFile.mkdirs()
+            output.setText((ui.sourceSets.test.runtimeClasspath + checker.sourceSets.main.runtimeClasspath).asPath,'UTF-8')
+        }
+    }
+}

@@ -190,7 +190,7 @@ public final class UiSession implements AutoCloseable {
         if(c!=textFocusControl){textFocusControl=c;textFocusToken=new Object();}
         return c instanceof TextField&&c.available()&&visible(c)?textFocusToken:null;
     }
-    public void hover(float x,float y){requireOpen();if(composite!=null){if(composite.shown&&!composite.closing)composite.child.hover(x,y);return;}if(scroll!=null)scroll.hover(x,y);var id=topAt(x,y);for(var c:controls)c.hovered=c.id().equals(id);}
+    public void hover(float x,float y){requireOpen();if(composite!=null){if(composite.shown&&!composite.closing)composite.child.hover(x,y);return;}if(scroll!=null)scroll.hover(x,y);var id=topAt(x,y);for(var c:controls){c.hovered=c.id().equals(id);c.hoverPointer(x,y,displayed);}}
     public void paint(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled){
         paintInternal(canvas,frame,viewport,time,motionEnabled,Map.of(),false);
     }

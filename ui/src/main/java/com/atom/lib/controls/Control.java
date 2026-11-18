@@ -5,7 +5,7 @@ import java.util.*;
 import io.github.humbleui.skija.Canvas;
 import com.atom.lib.motion.FrameTime;
 /** Stable instance; node() produces data without recreating interaction state. */
-public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog, ActionButton, TextField {
+public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog, ActionButton, TextField, HostedControl {
     private final NodeId id;
     final ControlContext context;
     UiSession owner;
@@ -19,12 +19,17 @@ public abstract sealed class Control permits Slider, Toggle, ConfirmationDialog,
     public final void presentation(ControlPresentation value){presentation=Objects.requireNonNull(value);}
     public final ControlPresentation presentation(){return presentation;}
     protected Control(NodeId id,ControlContext context){this.id=Objects.requireNonNull(id);this.context=Objects.requireNonNull(context);}
+    /** A host component owns its renderer and timing; it never borrows an unrelated library skin. */
+    Control(NodeId id){this.id=Objects.requireNonNull(id);context=null;}
     public final NodeId id(){return id;}
+    public final ControlObservation observation(){return snapshotObservation();}
+    protected ControlObservation snapshotObservation(){return new ControlObservation(available(),hovered,pressed,hover,press,position);}
     public abstract LayoutNode node(LayoutStyle style);
     abstract Set<NodeId> slots();
     abstract boolean enabled();
     abstract boolean interacting();
     abstract boolean press(PointerEvent e,PresentationFrame frame);
+    void hoverPointer(float x,float y,PresentationFrame frame){}
     abstract void drag(PointerEvent e,PresentationFrame frame);
     abstract void release(PointerEvent e,PresentationFrame frame);
     abstract void cancel(CancelReason reason);
