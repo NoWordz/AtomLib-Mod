@@ -115,9 +115,18 @@ public final class UiSession implements AutoCloseable {
             var id=displayed.topAt(modalTargets.keySet(),x,y);
             return id!=null&&modalHit(modal,id,x,y)?id:null;
         }
-        if(displayed==null)return null;var ids=new HashSet<NodeId>();for(var c:controls)if(c.available()&&visible(c))ids.add(c.id());return displayed.topAt(ids,x,y);
+        if(displayed==null)return null;
+        var ids=new HashSet<NodeId>();
+        for(var c:controls){
+            if(c.available()&&visible(c)&&(!(c instanceof HostedControl host)||host.acceptsPointer(x,y,displayed)))ids.add(c.id());
+        }
+        return displayed.topAt(ids,x,y);
     }
     private Control byId(NodeId id){return id==null?null:controlsById.get(id);}
+    private HostedControl editingHost(){
+        Control control=byId(focus.current());
+        return control instanceof HostedControl host&&host.available()&&visible(host)&&host.capturesEditingInput()?host:null;
+    }
     private void refreshFocus(){
         if(modal!=null)return;
         var previous=focus.current();
@@ -149,6 +158,13 @@ public final class UiSession implements AutoCloseable {
             if(modal.phase!=ModalState.Phase.CLOSING)dispatcher.dispatch(event);
             return InputResult.CONSUMED;
         }
+        if(event.type()==PointerEvent.Type.PRESS){
+            var editor=editingHost();
+            if(editor!=null&&editor.beforePointerPress(event,displayed)){
+                swallowedButtons.add(event.button());
+                return InputResult.CONSUMED;
+            }
+        }
         if(draggingScroll){if(event.type()==PointerEvent.Type.MOVE){scroll.dragThumb(event.y()-scrollY);scrollY=event.y();}if((event.type()==PointerEvent.Type.RELEASE&&event.button()==0)||event.type()==PointerEvent.Type.CANCEL)draggingScroll=false;return InputResult.CONSUMED;}
         if(scroll!=null&&event.type()==PointerEvent.Type.PRESS&&event.button()==0&&scroll.thumb().height()>0&&scroll.thumb().contains(event.x(),event.y())){cancel(CancelReason.COORDINATE_SPACE_CHANGED);draggingScroll=true;scrollY=event.y();return InputResult.CONSUMED;}
         if(event.type()==PointerEvent.Type.CANCEL){boolean captured=dispatcher.captureOwner()!=null;cancel(CancelReason.FOCUS_LOST);return captured?InputResult.CONSUMED:InputResult.PASS;}
@@ -161,11 +177,17 @@ public final class UiSession implements AutoCloseable {
         if(swallowedKeys.contains(event.key())){if(!event.pressed())swallowedKeys.remove(event.key());return InputResult.CONSUMED;}
         if(composite!=null){var state=composite;if(state.closing){swallowedKeys.addAll(keysDown);return InputResult.CONSUMED;}if(event.key()==KeyEvent.Key.ESCAPE&&event.pressed()){closeModal(ModalCloseReason.CANCELLED);return InputResult.CONSUMED;}if(state.shown)state.child.key(event);return InputResult.CONSUMED;}
         if(modal!=null){if(modal.phase==ModalState.Phase.CLOSING)swallowedKeys.addAll(keysDown);modalKey(event,freshPress);return InputResult.CONSUMED;}
+        var editor=editingHost();
+        if(editor!=null){
+            editor.key(event);
+            if(event.pressed()&&!editor.capturesEditingInput())swallowedKeys.add(event.key());
+            return InputResult.CONSUMED;
+        }
         if(event.key()==KeyEvent.Key.ESCAPE&&event.pressed()){boolean active=draggingScroll||controls.stream().anyMatch(Control::interacting);cancel(CancelReason.ESCAPE);return active?InputResult.CONSUMED:InputResult.PASS;}
         if(event.key()==KeyEvent.Key.TAB){if(event.pressed()){var previous=focus.current();var id=focus.step(event.shift());if(!Objects.equals(previous,id)){textFocusToken=new Object();swallowedKeys.addAll(keysDown);var c=byId(previous);if(c!=null)cancelControl(c,CancelReason.FOCUS_LOST);}if(id!=null&&scroll!=null&&scroll.contains(id))scroll.ensureVisible(displayed.box(id).border());}return InputResult.CONSUMED;}
         var c=byId(focus.current());return c!=null&&c.available()&&c.key(event)?InputResult.CONSUMED:InputResult.PASS;
     }
-    public InputResult wheel(float x,float y,float dx,float dy){requireOpen();if(composite!=null){if(!composite.closing&&composite.shown)composite.child.wheel(x,y,dx,dy);return InputResult.CONSUMED;}if(modal!=null)return InputResult.CONSUMED;if(scroll==null||!scroll.bounds().contains(x,y)||dy==0)return InputResult.PASS;cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll.wheelBy(-dy*40);return InputResult.CONSUMED;}
+    public InputResult wheel(float x,float y,float dx,float dy){requireOpen();if(composite!=null){if(!composite.closing&&composite.shown)composite.child.wheel(x,y,dx,dy);return InputResult.CONSUMED;}if(modal!=null||editingHost()!=null)return InputResult.CONSUMED;if(scroll==null||!scroll.bounds().contains(x,y)||dy==0)return InputResult.PASS;cancel(CancelReason.COORDINATE_SPACE_CHANGED);scroll.wheelBy(-dy*40);return InputResult.CONSUMED;}
     private TextClipboard clipboard=TextClipboard.memory();
     public TextClipboard clipboard(){return clipboard;}
     public void clipboard(TextClipboard value){requireOpen();clipboard=Objects.requireNonNull(value);if(composite!=null)composite.child.clipboard(value);}
@@ -192,19 +214,34 @@ public final class UiSession implements AutoCloseable {
     }
     public void hover(float x,float y){requireOpen();if(composite!=null){if(composite.shown&&!composite.closing)composite.child.hover(x,y);return;}if(scroll!=null)scroll.hover(x,y);var id=topAt(x,y);for(var c:controls){c.hovered=c.id().equals(id);c.hoverPointer(x,y,displayed);}}
     public void paint(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled){
-        paintInternal(canvas,frame,viewport,time,motionEnabled,Map.of(),false);
+        paintInternal(canvas,frame,viewport,time,motionEnabled,Map.of(),Map.of(),false);
     }
     /** Paints decorations in frame order inside the same entrance layer as their descendants. */
     public void paint(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled,Map<NodeId,java.util.function.Consumer<Canvas>> decorations){
-        paintInternal(canvas,frame,viewport,time,motionEnabled,Map.copyOf(decorations),true);
+        paintInternal(canvas,frame,viewport,time,motionEnabled,Map.copyOf(decorations),Map.of(),true);
     }
+    /** Paints group surfaces and keeps their canvas clips in force for the group's descendants. */
+    public void paintGroups(Canvas canvas, PresentationFrame frame, Viewport viewport, FrameTime time,
+                            Map<NodeId, java.util.function.Consumer<Canvas>> groups) {
+        paintInternal(canvas, frame, viewport, time, true, Map.of(), Map.copyOf(groups), false);
+    }
+
+    private record PaintGroup(NodeId id, int saveCount) {}
+
+    private static boolean inside(PresentationFrame frame, NodeId node, NodeId group) {
+        for (var parent = frame.box(node).parent(); parent != null; parent = frame.box(parent).parent()) {
+            if (parent.equals(group)) return true;
+        }
+        return false;
+    }
+
     private static NodeId entranceRoot(PresentationFrame frame,NodeId id){
         if(!frame.hasEntrance(id))return null;
         var parent=frame.box(id).parent();while(parent!=null&&frame.hasEntrance(parent)){id=parent;parent=frame.box(id).parent();}return id;
     }
-    private void paintInternal(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled,Map<NodeId,java.util.function.Consumer<Canvas>> decorations,boolean groupEntrances){
+    private void paintInternal(Canvas canvas,PresentationFrame frame,Viewport viewport,FrameTime time,boolean motionEnabled,Map<NodeId,java.util.function.Consumer<Canvas>> decorations,Map<NodeId,java.util.function.Consumer<Canvas>> groups,boolean groupEntrances){
         requireOpen();Objects.requireNonNull(canvas);Objects.requireNonNull(frame);Objects.requireNonNull(viewport);Objects.requireNonNull(time);
-        if(!decorations.keySet().stream().allMatch(frame::contains))throw new IllegalArgumentException("Decoration missing from presentation frame");
+        if(!decorations.keySet().stream().allMatch(frame::contains)||!groups.keySet().stream().allMatch(frame::contains))throw new IllegalArgumentException("Decoration missing from presentation frame");
         if(time.frameId()<lastFrame||time.nowNanos()<lastNow)throw new IllegalArgumentException("Nonmonotonic frame time");
         for(var c:controls)validate(c,frame,viewport);
         if(modal!=null)validate(modal.dialog,frame,viewport);
@@ -216,7 +253,20 @@ public final class UiSession implements AutoCloseable {
         int saved=canvas.getSaveCount();canvas.save();
         try{
             NodeId activeEntrance=null;int entranceSaved=-1;
+            Deque<PaintGroup> openGroups = new ArrayDeque<>();
             for(var id:frame.paintOrder()){
+                while (!openGroups.isEmpty() && !inside(frame, id, openGroups.peek().id())) {
+                    canvas.restoreToCount(openGroups.pop().saveCount());
+                }
+                var group = groups.get(id);
+                if (group != null) {
+                    int groupSaved = canvas.getSaveCount();
+                    canvas.save();
+                    openGroups.push(new PaintGroup(id, groupSaved));
+                    var clip = frame.box(id).clip();
+                    canvas.clipRect(io.github.humbleui.types.Rect.makeXYWH(clip.x(), clip.y(), clip.width(), clip.height()));
+                    group.accept(canvas);
+                }
                 if(groupEntrances){
                     var root=entranceRoot(frame,id);
                     if(!Objects.equals(root,activeEntrance)){
@@ -232,6 +282,7 @@ public final class UiSession implements AutoCloseable {
                 try{canvas.clipRect(io.github.humbleui.types.Rect.makeXYWH(clip.x(),clip.y(),clip.width(),clip.height()));if(!groupEntrances&&frame.opacity(c.id())<1)canvas.saveLayerAlpha(null,Math.round(frame.opacity(c.id())*255));float scale=frame.renderScale(c.id());canvas.scale(scale,scale);c.paint(canvas,frame.forPainting(c.id()),new ControlVisual(c.id().equals(focus.current()),c.hover,c.press,c.position,1));}
                 finally{canvas.restoreToCount(count);}
             }
+            while (!openGroups.isEmpty()) canvas.restoreToCount(openGroups.pop().saveCount());
             if(entranceSaved>=0)canvas.restoreToCount(entranceSaved);
             if(scroll!=null&&scroll.scrollbarVisible()&&scroll.thumb(frame).height()>0){var r=scroll.thumb(frame);try(var p=new io.github.humbleui.skija.Paint().setColor((Math.round(136*scroll.scrollbarOpacity())<<24)|0x989ba5)){canvas.drawRRect(io.github.humbleui.types.RRect.makeXYWH(r.x(),r.y(),r.width(),r.height(),r.width()/2),p);}}
             if(composite!=null){

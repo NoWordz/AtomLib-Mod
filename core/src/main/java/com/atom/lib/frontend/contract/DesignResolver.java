@@ -24,6 +24,15 @@ public final class DesignResolver {
             for(String member:members.keySet()){name(member);Value v=value(d,new Ref(entry.getKey(),member),new HashSet<>());
                 if(v instanceof NumberValue n && (n.unit()==null||!Double.isFinite(n.value())))fail("INVALID_VALUE",entry.getKey()+"/"+member,"finite typed number",n);
                 if(v instanceof TextValue t && (t.value()==null||t.value().isBlank()))fail("INVALID_VALUE",entry.getKey()+"/"+member,"operation identity",t);
+                if(v instanceof GroupLayoutValue group){
+                    if(f.aspect()!=Aspect.LAYOUT)fail("ASPECT_MISMATCH",entry.getKey(),Aspect.LAYOUT,f.aspect());
+                    Layout layout=d.layouts().get(group.layout());
+                    if(layout==null)fail("UNKNOWN_LAYOUT",entry.getKey(),d.layouts().keySet(),group.layout());
+                    accessible(d,f.scope(),layout.scope(),entry.getKey());
+                    if(group.scroll()&&(!group.clip()||layout.axis()!=Axis.COLUMN)){
+                        fail("INVALID_LAYOUT",entry.getKey(),"vertical scroll requires a clipped column",group);
+                    }
+                }
                 if(v instanceof ParameterValue p && !d.parameters().containsKey(p.parameter()))fail("UNKNOWN_PARAMETER",entry.getKey(),"declared parameter",p);
                 if(v instanceof AssetValue a){Asset asset=d.assets().get(a.asset());if(asset==null)fail("UNKNOWN_ASSET",entry.getKey(),"declared resource",a);
                     AssetKind expected=switch(f.aspect()){case ICON->AssetKind.ICON;case TYPOGRAPHY->AssetKind.FONT;case SOUND->AssetKind.SOUND;case MATERIAL->AssetKind.TEXTURE;default->null;};
@@ -62,7 +71,23 @@ public final class DesignResolver {
                 case NOT_APPLICABLE->{if(r.bindings().containsKey(e.getKey()))fail("ROLE_CAPABILITY",id+"/"+e.getKey(),"not applicable","binding exists");}
                 case UNSUPPORTED->fail("UNSUPPORTED_CAPABILITY",id+"/"+e.getKey(),"supported role",e.getValue().reason());
             }
-            r.bindings().forEach((aspect,ref)->{Family f=family(d,ref.family());accessible(d,r.scope(),f.scope(),id);if(f.aspect()!=aspect)fail("ASPECT_MISMATCH",id+"/"+aspect,aspect,f.aspect());value(d,ref,new HashSet<>());});
+            r.bindings().forEach((aspect,ref)->{
+                Family f=family(d,ref.family());accessible(d,r.scope(),f.scope(),id);
+                if(f.aspect()!=aspect)fail("ASPECT_MISMATCH",id+"/"+aspect,aspect,f.aspect());
+                if(value(d,ref,new HashSet<>()) instanceof GroupLayoutValue group){
+                    Rule layoutRule=role.requirements().get(Aspect.LAYOUT).rule();
+                    var aspects = group.scroll() ? EnumSet.of(Aspect.LAYOUT, Aspect.SCROLL) : EnumSet.of(Aspect.LAYOUT);
+                    if (r.bindings().containsKey(Aspect.MATERIAL)) aspects.add(Aspect.MATERIAL);
+                    if(!r.bindings().keySet().equals(aspects)||!r.slots().isEmpty()||role.interactive()){
+                        fail("ROLE_CAPABILITY",id,"structural group requires "+aspects+" without content slots",r);
+                    }
+                    if(group.scroll()&&(layoutRule!=Rule.REQUIRED
+                            ||role.requirements().get(Aspect.SCROLL).rule()!=Rule.REQUIRED
+                            ||!new TextValue(GroupLayoutValue.VERTICAL_SCROLL).equals(value(d,r.bindings().get(Aspect.SCROLL))))){
+                        fail("INVALID_LAYOUT",id,"always-present viewport with built-in vertical scrolling",r);
+                    }
+                }
+            });
             r.slots().forEach((slot,s)->{name(slot);Objects.requireNonNull(s.kind());if(s.kind()==ContentKind.ACTION&&!role.interactive())fail("ROLE_CAPABILITY",id+"/"+slot,"interactive role","action on display role");});
         });
         d.layouts().forEach((id,l)->{name(id);scopeAncestors(d,l.scope());Objects.requireNonNull(l.axis());double min=geometry(d,l.scope(),l.minimumWidth(),id),max=geometry(d,l.scope(),l.maximumWidth(),id);geometry(d,l.scope(),l.gap(),id);geometry(d,l.scope(),l.padding(),id);if(max<min)fail("LAYOUT_RANGE",id,"min <= max",min+" > "+max);});

@@ -44,6 +44,28 @@ public final class ScrollViewport {
         var frame=PresentationFrame.create(tree,limited,new Viewport(screen.width()/scale,screen.height()/scale,screen.pixelsPerUnit()*scale),Map.of(tree.root().id(),new PresentationFrame.Offset(0,offset/scale)),new PresentationFrame.Offset(bounds.x()/scale,bounds.y()/scale),entrance);
         return frame.scaled(scale).withScroll(this,state);
     }
+    /** Scrolls only the descendants of an embedded, measured viewport. Siblings stay fixed. */
+    public PresentationFrame presentGroup(LayoutTree tree,LayoutSnapshot natural,Viewport screen,NodeId id){
+        LayoutNode group=tree.node(id);
+        if(!group.style().clip()||!group.style().scroll())throw new IllegalArgumentException("Expected a clipped scroll group");
+        LayoutBox groupBox=natural.box(id);
+        Rect bounds=groupBox.clip();
+        Set<NodeId> descendants=new HashSet<>();
+        float bottom=collectExtent(group,natural,descendants);
+        float extent=Math.max(bounds.height(),bottom+group.style().padding().bottom()-bounds.y());
+        float shownOffset=Math.max(0,Math.min(offset,extent-bounds.height()));
+        return PresentationFrame.create(tree,natural,screen,Map.of(id,new PresentationFrame.Offset(0,shownOffset)),
+                new PresentationFrame.Offset(0,0)).withScroll(this,new State(bounds,extent,shownOffset,Set.copyOf(descendants)));
+    }
+    private static float collectExtent(LayoutNode group,LayoutSnapshot natural,Set<NodeId> descendants){
+        float bottom=natural.box(group.id()).border().y();
+        for(LayoutNode child:group.children()){
+            if(child.style().hidden())continue;
+            descendants.add(child.id());
+            bottom=Math.max(bottom,Math.max(natural.box(child.id()).border().bottom(),collectExtent(child,natural,descendants)));
+        }
+        return bottom;
+    }
     public Rect thumb(){return thumb(bounds,extent,offset);}
     private Rect thumb(Rect bounds,float extent,float offset){float h=extent<=bounds.height()?0:Math.min(bounds.height(),Math.max(24,bounds.height()*bounds.height()/extent));float y=extent<=bounds.height()?bounds.y():bounds.y()+offset/(extent-bounds.height())*(bounds.height()-h);return new Rect(bounds.right()-6,y,4,h);}
     public boolean dragThumb(float delta){

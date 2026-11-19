@@ -1,10 +1,10 @@
 package com.atom.lib.design.atomchat;
 
 /**
- * Installs the host state behind the AtomChat design tokens.
+ * Legacy process-wide compatibility state and pure colour utilities.
  *
- * <p>The defaults reproduce AtomChat's shipped appearance, so a consumer can
- * draw with {@link UiTokens} without wiring anything up.
+ * <p>Use {@link #defaultHost()} for shipped defaults in a new integration.
+ * Existing implicit drawing APIs continue to use the shared compatibility state.
  */
 public final class Design {
     private static volatile DesignHost host = Defaults.INSTANCE;
@@ -21,18 +21,26 @@ public final class Design {
     private static final RippleSink NO_RIPPLE = (x, y, w, h, r, s) -> { };
     private static volatile RippleSink ripple = NO_RIPPLE;
 
+    /** @deprecated Pass a host-owned sink to a session or the explicit drawing overloads. */
+    @Deprecated(since = "0.6.0")
     public static void rippleSink(RippleSink value) {
         ripple = value == null ? NO_RIPPLE : value;
     }
 
+    /** @deprecated Call your own feedback sink or use a session-local feedback layer. */
+    @Deprecated(since = "0.6.0")
     public static void ripple(float x, float y, float width, float height, float radius, int surface) {
         ripple.region(x, y, width, height, radius, surface);
     }
 
+    /** @deprecated Create a session or pass your own theme to the explicit token and drawing overloads. */
+    @Deprecated(since = "0.6.0")
     public static void host(DesignHost value) {
         host = value == null ? Defaults.INSTANCE : value;
     }
 
+    /** @deprecated Use a session snapshot, your own theme, or {@link #defaultHost()}. */
+    @Deprecated(since = "0.6.0")
     public static DesignHost host() {
         return host;
     }

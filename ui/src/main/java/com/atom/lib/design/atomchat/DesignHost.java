@@ -3,9 +3,9 @@ package com.atom.lib.design.atomchat;
 /**
  * Host-supplied state the AtomChat look reads while painting.
  *
- * <p>Tokens never reach into a host's config directly. A consumer that wants
- * the AtomChat look either accepts {@link Design}'s defaults or installs its
- * own host so the palette follows its own settings.
+ * <p>Pass an immutable snapshot to theme-dependent tokens and painters.
+ * {@link Design#defaultHost()} supplies the bundled appearance without
+ * consulting the legacy shared state.
  */
 public interface DesignHost {
     /** Corner radius on the 1080p basis. {@code 20} is AtomChat's default. */

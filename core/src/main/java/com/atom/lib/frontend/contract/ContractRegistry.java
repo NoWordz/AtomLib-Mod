@@ -30,8 +30,16 @@ public final class ContractRegistry {
         Map<String,Double> result=new HashMap<>();design.parameters().forEach((id,p)->{double v=input.getOrDefault(id,p.initial());if(!Double.isFinite(v)||v<p.minimum()||v>p.maximum())throw new IllegalArgumentException("PARAMETER_RANGE "+id);result.put(id,v);});return Map.copyOf(result);
     }
     public record ResolvedLayout(Axis axis,float gap,float padding,float minimumWidth,float maximumWidth) {}
+    public record ResolvedGroupLayout(ResolvedLayout layout,boolean clip,boolean scroll) {}
     public record BoundSound(String event,String resource,String channel,float volume,float pitch,int priority) {}
     private float unit(Ref ref,Map<String,Double> parameters){NumberValue n=DesignResolver.number(design,ref,parameters);if(n.unit()!=Unit.U||!Double.isFinite(n.value())||n.value()<0||n.value()>Float.MAX_VALUE)throw new IllegalArgumentException("UNIT_MISMATCH expected finite nonnegative logical u: "+ref);return (float)n.value();}
+    private ResolvedLayout resolveLayout(String id,Map<String,Double> input){
+        Layout layout=design.layouts().get(id);
+        Map<String,Double> parameters=parameters(input);
+        float minimum=unit(layout.minimumWidth(),parameters),maximum=unit(layout.maximumWidth(),parameters);
+        if(minimum>maximum)throw new IllegalArgumentException("LAYOUT_RANGE min exceeds max");
+        return new ResolvedLayout(layout.axis(),unit(layout.gap(),parameters),unit(layout.padding(),parameters),minimum,maximum);
+    }
     public final class PageHandle {
         private final String id;private final Page page;
         private PageHandle(String id,Page page){this.id=id;this.page=page;}
@@ -50,7 +58,15 @@ public final class ContractRegistry {
         public Map<String,Double> parameters(Map<String,Double> input){return ContractRegistry.this.parameters(input);}
         public RecipeHandle recipe(String id){if(!page.recipes().contains(id))throw new IllegalArgumentException("UNKNOWN_RECIPE page="+this.id+" actual="+id+" expected="+page.recipes());return new RecipeHandle(id,design.recipes().get(id));}
         public void require(RecipeHandle handle){if(handle==null||handle.registry()!=ContractRegistry.this)throw new IllegalArgumentException("FOREIGN_HANDLE page="+id);if(!page.recipes().contains(handle.id))throw new IllegalArgumentException("UNAPPROVED_RECIPE page="+id+" actual="+handle.id);}
-        public ResolvedLayout layout(Map<String,Double> input){Map<String,Double> p=parameters(input);Layout l=design.layouts().get(page.layout());float min=unit(l.minimumWidth(),p),max=unit(l.maximumWidth(),p);if(min>max)throw new IllegalArgumentException("LAYOUT_RANGE min exceeds max");return new ResolvedLayout(l.axis(),unit(l.gap(),p),unit(l.padding(),p),min,max);}
+        public ResolvedLayout layout(Map<String,Double> input){return resolveLayout(page.layout(),input);}
+        public ResolvedGroupLayout groupLayout(RecipeHandle handle,Map<String,Double> input){
+            require(handle);
+            Ref ref=handle.recipe.bindings().get(Aspect.LAYOUT);
+            if(ref==null||!(DesignResolver.value(design,ref) instanceof GroupLayoutValue group)){
+                throw new IllegalArgumentException("ROLE_CAPABILITY recipe="+handle.id()+" is not a structural group");
+            }
+            return new ResolvedGroupLayout(resolveLayout(group.layout(),input),group.clip(),group.scroll());
+        }
     }
     public final class RecipeHandle {
         private final String id;private final Recipe recipe;
@@ -61,6 +77,10 @@ public final class ContractRegistry {
         public Map<String,Slot> slots(){return recipe.slots();}
         public Role role(){return design.roles().get(recipe.role());}
         public Set<String> scenarios(){return recipe.scenarios();}
+        public boolean structuralGroup(){
+            Ref ref=recipe.bindings().get(Aspect.LAYOUT);
+            return ref!=null&&DesignResolver.value(design,ref) instanceof GroupLayoutValue;
+        }
         public Optional<BoundSound> sound(String event,Map<String,Double> input,Map<String,Boolean> states){
             Ref ref=recipe.bindings().get(Aspect.SOUND);if(ref==null)throw new IllegalArgumentException("ROLE_CAPABILITY sound not declared for recipe="+id);
             Value value=DesignResolver.value(design,ref);if(!(value instanceof SoundValue sound))throw new IllegalArgumentException("INVALID_SOUND_BINDING recipe="+id);

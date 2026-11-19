@@ -30,14 +30,33 @@ and draw with your own tokens if you do not.
 | `UiCards` | Card surface, float surface, notification backdrop |
 | `AppIcons` | Icon path data |
 
-The tokens read host state instead of hardcoding one mod's config. Install
-`Design.host(DesignHost)` to supply your corner radius, accent, card tint,
-card colour, panel colour, secondary text colour and half-screen state. With
-no host installed the defaults are AtomChat's shipped values, so a bare
-`UiTokens.cardFill()` already looks right.
+For direct drawing, pass one immutable theme snapshot to both measurement and paint:
 
-`Design.rippleSink(RippleSink)` is the optional click-feedback hook;
-without one, cards draw and clicks do nothing.
+```java
+var theme = Design.defaultHost();
+float radius = UiTokens.cardRadius(theme);
+UiCards.drawCard(canvas, x, y, width, height, radius, hover, theme);
+```
+
+Pass a host-owned `Design.RippleSink` as the final argument for click feedback.
+The overload shown above needs no feedback registration. A window that uses
+the full settings widgets can instead use `AtomDefault.createSession(runtime)`.
+
+The compatibility methods on `Design`, plus the `UiTokens` and `UiCards`
+overloads that use them implicitly, are deprecated in 0.6. Compiled legacy
+callers still share the last registered theme and callback, including a caller
+that only reads the defaults. New Java source can turn these warnings into
+errors with `-Xlint:deprecation -Werror`. Pure operations such as `UiTokens.s`,
+`Design.isLight` and the explicit overloads need no registration.
+
+The old descriptors carry no host or window identity. Two unchanged legacy
+mods can paint different windows on the same render thread, or use the same
+helper library. Partitioning by thread or caller class would change observable
+behavior without reliably identifying the window. An owner can isolate a legacy
+renderer by migrating its calls to explicit context. Transparent isolation for
+two unchanged legacy mods would require changing the legacy contract or
+intercepting calls with an authoritative host identity supplied by the loader.
+See the [two-JAR probe](../verification/2026-11-18-legacy-host-isolation.md).
 
 Not included on purpose: layout, motion timing, message bubbles, screen chrome,
 composers and any screen-level composition. These classes provide tokens and

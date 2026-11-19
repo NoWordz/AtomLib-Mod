@@ -1,5 +1,33 @@
 # Release Notes
 
+## v0.6.0
+
+**新增**
+
+- 新增前端契约检查，让开发者按已审定的设计验证界面、交互和反馈音。
+- 严格页面支持嵌套分组、独立滚动与折叠、数值编辑及反馈音。
+- 新增显式主题和波纹入口，采用新入口的宿主可与旧模组隔离外观和点击反馈。
+
+**说明**
+
+- 旧全局入口仍可运行，两个继续使用全局入口的宿主仍共享状态。
+- 在 NeoForge 中配对验收了 AtomChat 0.9.1 候选的历史设置、服务端托管、反馈音及与 Module Shop 共存的主题隔离。
+- 请选择 Minecraft 1.20.1 Forge 或 1.21.1 Fabric、NeoForge 对应的 JAR，Maven ZIP 供开发者使用。
+
+----
+
+**Added**
+
+- Added frontend contract checks so developers can verify screens, interactions and feedback sounds against a reviewed design.
+- Strict pages support nested groups, independent scrolling and folding, numeric editing and sound feedback.
+- Explicit theme and ripple APIs let adopting hosts keep their appearance and click feedback separate from legacy mods.
+
+**Notes**
+
+- The legacy global APIs remain compatible, and hosts that both use them still share state.
+- Tested the paired AtomChat 0.9.1 candidate on NeoForge, including history settings, server hosting, feedback sounds and theme isolation alongside Module Shop.
+- Download the JAR for Minecraft 1.20.1 Forge or 1.21.1 Fabric or NeoForge. The Maven ZIP is for mod developers.
+
 ## v0.5.0
 
 **新增**

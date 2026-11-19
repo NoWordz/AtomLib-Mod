@@ -11,6 +11,12 @@ public final class HostedControl extends Control {
     public interface Adapter {
         LayoutNode node(NodeId id,LayoutStyle outer);
         boolean enabled();
+        default boolean acceptsPointer(float x,float y,PresentationFrame displayed){return true;}
+        /** Retains the editing input route until an explicit commit or cancellation. */
+        default boolean capturesEditingInput(){return false;}
+        default void hostFocus(boolean focused){}
+        /** Called for the focused editor before a new pointer press is dispatched. */
+        default boolean beforePointerPress(PointerEvent event,PresentationFrame displayed){return false;}
         boolean press(PointerEvent event,PresentationFrame displayed);
         default void hover(float x,float y,PresentationFrame displayed){}
         default void drag(PointerEvent event,PresentationFrame displayed){}
@@ -35,12 +41,23 @@ public final class HostedControl extends Control {
     boolean interacting(){return pointer||adapter.interacting();}
     /** UiSession paints this component through the matching Canvas scale, so input uses its inverse once. */
     private PointerEvent paintingEvent(PointerEvent event,PresentationFrame displayed){float scale=displayed.renderScale(id());return new PointerEvent(event.type(),event.x()/scale,event.y()/scale,event.button());}
+    boolean acceptsPointer(float x,float y,PresentationFrame displayed){
+        var box=displayed.box(id());
+        if(!box.hit().contains(x,y)||!box.clip().contains(x,y))return false;
+        float scale=displayed.renderScale(id());
+        return adapter.acceptsPointer(x/scale,y/scale,displayed.forPainting(id()));
+    }
+    boolean capturesEditingInput(){return adapter.capturesEditingInput();}
+    boolean beforePointerPress(PointerEvent event,PresentationFrame displayed){
+        return adapter.beforePointerPress(paintingEvent(event,displayed),displayed.forPainting(id()));
+    }
     void hoverPointer(float x,float y,PresentationFrame displayed){if(displayed==null||!displayed.contains(id()))return;float scale=displayed.renderScale(id());adapter.hover(x/scale,y/scale,displayed.forPainting(id()));}
     boolean press(PointerEvent event,PresentationFrame displayed){boolean accepted=adapter.press(paintingEvent(event,displayed),displayed.forPainting(id()));pointer=accepted;pressed=accepted;return accepted;}
     void drag(PointerEvent event,PresentationFrame displayed){if(pointer)adapter.drag(paintingEvent(event,displayed),displayed.forPainting(id()));}
     void release(PointerEvent event,PresentationFrame displayed){try{if(pointer)adapter.release(paintingEvent(event,displayed),displayed.forPainting(id()));}finally{pointer=false;pressed=false;}}
     void cancel(CancelReason reason){try{adapter.cancel(reason);}finally{pointer=false;pressed=false;}}
     boolean key(KeyEvent event){return adapter.key(event);}
+    boolean character(int codePoint){return adapter.text(Character.toString(codePoint));}
     boolean text(String text){return adapter.text(text);}
     void paint(Canvas canvas,PresentationFrame frame,ControlVisual visual){adapter.paint(canvas,frame,visual);}
     void advance(FrameTime time,boolean motion){

@@ -21,6 +21,10 @@ public final class PresentationFrame implements LayoutSnapshot {
     PresentationFrame withScroll(ScrollViewport viewport,ScrollViewport.State state){scrollStates=Map.of(viewport,state);paintingFrames.clear();return this;}
     ScrollViewport.State scrollState(ScrollViewport viewport){return scrollStates.get(viewport);}
     private PresentationFrame(long revision,Map<NodeId,LayoutBox> boxes,List<NodeId> order){this.revision=revision;this.boxes=Map.copyOf(boxes);this.paintingBoxes=this.boxes;this.order=List.copyOf(order);}
+    /** A hosted slot already measured and clipped by its screen's composition. */
+    public static PresentationFrame hosted(long revision, NodeId id, Rect bounds) {
+        return new PresentationFrame(revision, Map.of(id, new LayoutBox(bounds, bounds, bounds, bounds, null, null)), List.of(id));
+    }
     public static PresentationFrame create(LayoutTree tree,LayoutSnapshot snapshot,Viewport viewport,Map<NodeId,Offset> scroll,Offset translation){
         return create(tree,snapshot,viewport,scroll,translation,Map.of());
     }

@@ -14,4 +14,22 @@ class SceneBuildGateTest {
         var result=SceneCheckerMain.check(c.resolve("contract.properties"),r.resolve("contract.properties"),"unused","",temp.resolve("capture.fcs"));
         assertEquals("MISSING_EVIDENCE",result.status());assertTrue(result.diagnostics().stream().anyMatch(x->x.startsWith("MISSING_SCENE_ENTRY")),result.toString());
     }
+
+    @Test void testRunnerMustUseTheReviewedInputsFromTheActualTestSources()throws Exception{
+        Path roots = Files.createDirectories(temp.resolve("test-sources"));
+        Path runner = roots.resolve("app/SettingsScene.java");
+        Files.createDirectories(runner.getParent());
+        String source = "package app;\nclass SettingsScene {}\n";
+        Files.writeString(runner, source.replace("\n", "\r\n"));
+        Properties reviewed = new Properties();
+        reviewed.setProperty("scene.main","app.SettingsScene");
+        reviewed.setProperty("scene.sourceSet","test");
+        assertFalse(SceneCheckerMain.hasRunnerBinding(reviewed));
+        reviewed.setProperty("scene.input.app/SettingsScene.java", ProjectCheck.digest(source.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        assertTrue(SceneCheckerMain.hasRunnerBinding(reviewed));
+        assertEquals(List.of(), SceneCheckerMain.checkTestInputs(reviewed,List.of(roots),null));
+        Files.writeString(runner, source.replace("SettingsScene {}", "SettingsScene { int drift; }"));
+        assertEquals(List.of("SCENE_INPUT_CHANGED app/SettingsScene.java"), SceneCheckerMain.checkTestInputs(reviewed,List.of(roots),null));
+        assertEquals(List.of("MISSING_SCENE_TEST_CLASSPATH"),SceneCheckerMain.checkTestInputs(reviewed,List.of(),null));
+    }
 }

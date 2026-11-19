@@ -19,6 +19,9 @@ public final class InventoryMain {
         Properties observed=new Properties();
         report.uiStructures().forEach((key,value)->observed.setProperty(key,Base64.getEncoder().encodeToString(value.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
         try(var writer=Files.newBufferedWriter(output.resolve("observed-methods.properties"))) {observed.store(writer,"Observed only; never use as automatic legacy/approval enrollment");}
+        Properties compositions=new Properties();
+        report.compositionSnapshots().forEach((key,value)->compositions.setProperty(key,Base64.getEncoder().encodeToString(value.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        try(var writer=Files.newBufferedWriter(output.resolve("observed-compositions.properties"))){compositions.store(writer,"Observed host methods and callees; never auto-approve");}
         Properties classes=new Properties();report.implementationStructures().forEach((key,value)->classes.setProperty(key,Base64.getEncoder().encodeToString(value.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
         try(var writer=Files.newBufferedWriter(output.resolve("observed-implementations.properties"))){classes.store(writer,"Observed source only, not approval; reviewer chooses the closure and scope");}
         Files.write(output.resolve("diagnostics.txt"),report.diagnostics());

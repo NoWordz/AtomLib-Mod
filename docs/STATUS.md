@@ -1,6 +1,22 @@
 # AtomLib status
 
-**公开稳定版 0.5.0；本地 0.6.0 为未完成开发检查点。** · [0.5.0 Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.5.0) · [Integration guide](wiki/sessions.md)
+**0.6.0 已通过 NeoForge 配对实机验收。** · [Releases](https://github.com/NoWordz/AtomLib-Mod/releases) · [Integration guide](wiki/sessions.md)
+
+2026-11-19，用户确认「心自安然」中历史设置、服务端托管、反馈音和 Module Shop 共存时的主题隔离均正常。三端 Windows 本地干净检出各通过 140 个零容差场景和全量测试。 [验收记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-19-windows-分发检查与-neoforge-候选部署)
+
+## 0.6.0 续作
+
+1. 保留旧版宿主的二进制兼容。为低层绘制提供显式主题和反馈入口，AtomChat 的绘制、布局和输入统一读取自己的外观状态。两个仍使用全局兼容 API 的旧宿主可能互相覆盖。
+2. 从阶段三继续，复用既有标杆和配对重放工具。完成设置历史页和服务端托管页的容器、编辑、输入、声音和正式生产检查。验证真实入口完整覆盖和预期负例，再生成三端配对候选。 [前端契约交付检查点](verification/2026-11-18-frontend-contract-lock-delivery-checkpoint.md#5-最小剩余工作)
+3. 离屏复现已确认 Module-Shop 2.3.0 安装主题后，修复前的共享强调色从 `#4A90E2` 变成了 `#2B4BFF`。NeoForge「心自安然」用于游戏内验证双向主题切换、两页交互和听感。
+
+2026-11-18，用户在「心自安然」确认 Module-Shop 2.3.0 与配对安装的 AtomLib 0.6.0、AtomChat 0.9.1 共存时不再污染迁移后的 AtomChat。旧宿主保留二进制兼容和共享语义，两个未迁移宿主仍可互相覆盖。部署备份与安装哈希已记录。 [兼容边界与复现](verification/2026-11-18-legacy-host-isolation.md)
+
+本轮续作将旧全局状态的读取、隐式 token 和隐式卡片绘制也标为弃用，保留旧字节码及最后写入生效的行为。两个独立旧 JAR 的颜色及波纹串扰可重现，备份 AtomChat 0.6.0 与真实 Module-Shop 同 JVM 的强调色改写也已重现。新宿主用隔离会话或显式参数。见[兼容边界和复现命令](verification/2026-11-18-legacy-host-isolation.md)。
+
+2026-11-19，历史和管理员托管两页的默认 Screen 路由已接严格正文，继续使用原头栏、页签、输入顺序、模态和转场。三端候选各 768 个精确组合成员及 93 个宿主路由，遗留兄弟页面分别登记。两组真实页面软件重放各 224 帧相同。后续补齐 140 份原实现冻结样本，Forge、Fabric、NeoForge 的本地普通 `build check` 在测试专用审定输入下通过实际场景门。剩余正式审定版本、目标 Linux CI、独立审查和实机窗口及听感。 [两页场景与准入记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-19-两页实际场景包)
+
+性能联审修复仍位于 `codex/atomlib-performance` 的 `5e91ab1`，双向反哺另行安排。
 
 ## 2026-11-18 前端契约锁收口，未完成
 
@@ -15,7 +31,7 @@
 
 最新候选是七模块 Maven 输入，含三端 Lib JAR，不含按本轮修改重建的 AtomChat 游戏包；整个 ZIP 不能放入 mods。候选、源码快照及验证历史归档在本机 D:/AtomLib-Backups/2026-11-18-fcl-closeout/；原 build 路径清理后需从归档按原路径取回。
 
-继续工作先读[交付检查点](verification/2026-11-18-frontend-contract-lock-delivery-checkpoint.md)、[阶段三记录](verification/2026-11-18-frontend-contract-lock-stage-three.md)和[第二版方案](superpowers/plans/2026-11-17-v060-frontend-contract-lock.md)。需要用户重新授权继续实施；不要重选已认可的原设置页或重开阶段一探针。
+历史交接见[交付检查点](verification/2026-11-18-frontend-contract-lock-delivery-checkpoint.md)和[第二版方案](superpowers/plans/2026-11-17-v060-frontend-contract-lock.md)。当前续作从[阶段三记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-18-晚间配对验证)接手，继续使用已认可的原设置页参照。
 
 ## 已发布 0.5.0 的能力
 

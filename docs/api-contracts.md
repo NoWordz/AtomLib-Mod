@@ -65,10 +65,12 @@ loader's client shutdown, releasing only a bridge that already exists.
 `com.atom.lib.design.atomchat` provides `UiTokens` (sizes, radii, shadow
 constants and colour derivation), `SkiaDraw` (rounded rectangles, shadows,
 edges, rings, images, blur and clipping), `UiCards` (card and float surfaces)
-and `AppIcons` (icon path data). `Design.host(DesignHost)` supplies host
-colours and half-screen state; `Design.rippleSink(RippleSink)` is the optional
-click-feedback hook. The package does not own layout, motion timing or screen
-composition.
+and `AppIcons` (icon path data). Direct drawing can pass an immutable
+`DesignHost` to colour and geometry tokens, and pass an instance-owned
+`Design.RippleSink` to `UiCards.drawCard`. For stateful UI, use an
+`AppearanceSession` per window. Existing binaries using `Design.host` and
+`Design.rippleSink` still read and write the process-wide compatibility state.
+See [design package integration](wiki/design-package.md).
 
 `BackdropBlur.draw` accepts an already captured `Image`, a destination, sigma
 and fallback colour. Capture stays with the platform bridge. It does not read

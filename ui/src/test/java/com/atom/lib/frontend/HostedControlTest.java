@@ -30,11 +30,13 @@ class HostedControlTest {
         public void update(Control control,Map<Aspect,Value> values,StrictPageSession.ContentView content){enabled=content.snapshot().enabled();((HostedControl)control).refresh();}
     }
     @Test void originalSubControlHoverAndPressUseTheSamePresentedPaintingCoordinates(){
-        var id=new NodeId("hosted/part");int[] hovers={0},actions={0};
+        var id=new NodeId("hosted/part");int[] hovers={0},actions={0},text={0};
         var control=new HostedControl(id,new HostedControl.Adapter(){
             public LayoutNode node(NodeId id,LayoutStyle outer){return new LayoutNode(id,outer.size(Length.points(100),Length.points(40)),List.of(),null,0);}
             public boolean enabled(){return true;}
             boolean over(float x,float y,PresentationFrame frame){var box=frame.box(id).border();return x>=box.right()-20&&x<=box.right()&&y>=box.y()&&y<=box.bottom();}
+            public boolean acceptsPointer(float x,float y,PresentationFrame frame){return over(x,y,frame);}
+            public boolean text(String value){text[0]++;return true;}
             public void hover(float x,float y,PresentationFrame frame){if(over(x,y,frame))hovers[0]++;}
             public boolean press(PointerEvent event,PresentationFrame frame){if(over(event.x(),event.y(),frame)){actions[0]++;return true;}return false;}
             public ControlObservation observation(){return new ControlObservation(true,false,false,0,0,0);}
@@ -45,8 +47,13 @@ class HostedControlTest {
             var plain=PresentationFrame.create(tree,layout.layout(tree,viewport),viewport,Map.of(),new PresentationFrame.Offset(0,0));
             var frame=plain.scaled(1.5f).translated(13,7).clipped(viewport.bounds());session.paint(surface.getCanvas(),frame,viewport,new FrameTime(1,0,0),true);
             var shown=frame.box(id).border();float x=shown.right()-15,y=shown.y()+shown.height()/2;
+            session.pointer(new PointerEvent(PointerEvent.Type.PRESS,shown.x()+5,y,0));
+            session.pointer(new PointerEvent(PointerEvent.Type.RELEASE,shown.x()+5,y,0));
+            assertEquals(InputResult.PASS,session.text("5"),"the label outside the painted field cannot claim keyboard focus");
             session.hover(x,y);assertEquals(1,hovers[0],"host sub-control hover must receive the displayed pointer");
             session.pointer(new PointerEvent(PointerEvent.Type.PRESS,x,y,0));assertEquals(1,actions[0],"press must use the same coordinates as the painter");
+            assertEquals(InputResult.CONSUMED,session.text("5"));
+            assertEquals(1,text[0]);
         }
     }
     @Test void approvedOriginalCanCommitOnPressWithoutBeingReplacedByReleaseSemantics(){

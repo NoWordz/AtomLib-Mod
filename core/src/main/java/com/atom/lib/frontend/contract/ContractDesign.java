@@ -22,13 +22,18 @@ public record ContractDesign(int format, String namespace, String version, Strin
     public enum AssetKind { FONT,ICON,TEXTURE,SOUND }
     public enum Axis { ROW,COLUMN,WRAP }
     public record Ref(String family,String member) {}
-    public sealed interface Value permits NumberValue,TextValue,Alias,ParameterValue,AssetValue,SoundValue {}
+    public sealed interface Value permits NumberValue,TextValue,Alias,ParameterValue,AssetValue,SoundValue,GroupLayoutValue {}
     public record NumberValue(double value,Unit unit) implements Value {}
     /** An implementation-defined operation name, not executable code. */
     public record TextValue(String value) implements Value {}
     public record Alias(Ref target) implements Value {}
     public record ParameterValue(String parameter) implements Value {}
     public record AssetValue(String asset) implements Value {}
+    /** A structural group uses a declared layout and can clip its descendants. */
+    public record GroupLayoutValue(String layout,boolean clip,boolean scroll) implements Value {
+        public static final String VERTICAL_SCROLL = "vertical-scroll/1";
+        public GroupLayoutValue(String layout,boolean clip){this(layout,clip,false);}
+    }
     /** Empty asset plus a reason means deliberate silence; nonempty asset is one committed UI cue. */
     public record SoundValue(String event,String asset,String channel,String volumeParameter,double pitch,int priority,
                              NamedCondition when,String silenceReason) implements Value {}

@@ -3,6 +3,7 @@ package com.atom.lib.frontend.checker;
 import org.gradle.api.*;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.*;
+import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import java.io.File;
 import java.util.*;
@@ -61,25 +62,70 @@ public final class FrontendContractPlugin implements Plugin<Project> {
                 main.getAllJava().getFiles().stream().sorted().forEach(f->args.addAll(List.of("--source",f.getAbsolutePath())));
                 runtimeDependencies.getFiles().stream().sorted().forEach(f->args.addAll(List.of("--dependency",f.getAbsolutePath())));
                 main.getResources().getSrcDirs().stream().filter(f->!f.toPath().toAbsolutePath().normalize().startsWith(project.getLayout().getBuildDirectory().get().getAsFile().toPath().toAbsolutePath().normalize().resolve("generated/frontendContractResources"))).sorted().forEach(f->args.addAll(List.of("--resource-root",f.getAbsolutePath())));
-                t.setArgs(args);
+                setArguments(project, t, "source-" + mode, args);
             });
         });
     }
     private org.gradle.api.tasks.TaskProvider<JavaExec> registerScenes(Project project,FrontendContractExtension config,org.gradle.api.tasks.TaskProvider<JavaExec> sourceCheck){
+        var sets = project.getExtensions().getByType(SourceSetContainer.class);
+        var test = sets.getByName("test");
+        var agentJar = project.getTasks().register("frontendContractSceneAgent", Jar.class, t -> {
+            t.getDestinationDirectory().set(project.getLayout().getBuildDirectory().dir("frontend-contract-lock"));
+            t.getArchiveFileName().set("scene-agent.jar");
+            t.dependsOn(project.getTasks().named(test.getClassesTaskName()));
+            String agent = sceneSettings(config).getProperty("scene.agent", "");
+            String entry = agent.replace('.', '/');
+            t.from(test.getOutput().getClassesDirs(), copy -> copy.include(entry + ".class", entry + "$*.class"));
+            t.getManifest().attributes(Map.of("Premain-Class", agent));
+        });
         return project.getTasks().register("frontendContractCheck",JavaExec.class,t->{
             t.setGroup("verification");t.notCompatibleWithConfigurationCache("Scene gate resolves the complete runtime and current reviewed source");t.dependsOn(sourceCheck,project.getTasks().named("classes"));
+            var scene = sceneSettings(config);
+            boolean useTest = "test".equals(scene.getProperty("scene.sourceSet"));
+            boolean useAgent = useTest && scene.containsKey("scene.agent");
+            if (useTest) {
+                t.dependsOn(project.getTasks().named(test.getClassesTaskName()));
+                t.dependsOn(test.getRuntimeClasspath().getBuildDependencies());
+            }
+            if (useAgent) t.dependsOn(agentJar);
             t.getMainClass().set(SceneCheckerMain.class.getName());
             try{t.classpath(new File(CheckerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()),new File(com.atom.lib.frontend.contract.ContractDesign.class.getProtectionDomain().getCodeSource().getLocation().toURI()));}catch(Exception e){throw new GradleException("checker location unavailable",e);}
             var java=project.getExtensions().getByType(JavaPluginExtension.class);t.getJavaLauncher().set(project.getExtensions().getByType(JavaToolchainService.class).launcherFor(java.getToolchain()));
             t.doFirst(ignored->{
                 if(config.getContract()==null)throw new GradleException("MISSING_EVIDENCE contract config required");
-                var main=project.getExtensions().getByType(SourceSetContainer.class).getByName("main");
-                List<String> args=new ArrayList<>(List.of("--config",config.getContract().getAbsolutePath(),"--java",t.getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath(),"--runtime-classpath",main.getRuntimeClasspath().getAsPath(),"--output",project.getLayout().getBuildDirectory().file("frontend-contract-lock/current.fcs").get().getAsFile().getAbsolutePath(),"--report",project.getLayout().getBuildDirectory().file("frontend-contract-lock/scenes.txt").get().getAsFile().getAbsolutePath()));
+                var main = sets.getByName("main");
+                var runtime = useTest ? main.getOutput().plus(test.getRuntimeClasspath()) : main.getRuntimeClasspath();
+                List<String> args=new ArrayList<>(List.of("--config",config.getContract().getAbsolutePath(),"--java",t.getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath(),"--runtime-classpath",runtime.getAsPath(),"--output",project.getLayout().getBuildDirectory().file("frontend-contract-lock/current.fcs").get().getAsFile().getAbsolutePath(),"--report",project.getLayout().getBuildDirectory().file("frontend-contract-lock/scenes.txt").get().getAsFile().getAbsolutePath()));
+                if (useTest) {
+                    Set<File> roots = new LinkedHashSet<>(test.getJava().getSrcDirs());
+                    roots.addAll(test.getResources().getSrcDirs());
+                    args.addAll(List.of("--scene-test-roots", project.files(roots).getAsPath()));
+                }
+                if (useAgent) args.addAll(List.of("--scene-agent", agentJar.get().getArchiveFile().get().getAsFile().getAbsolutePath()));
                 if(config.getReviewed()!=null)args.addAll(List.of("--reviewed",config.getReviewed().getAbsolutePath()));
                 String revision=System.getenv("FCL_REVIEWED_REVISION");if(revision==null||revision.isBlank())revision=config.getReviewedRevision();
                 if(revision!=null){if(config.getReviewed()!=null||config.getReviewedRepository()==null||config.getReviewedConfig()==null)throw new GradleException("MISSING_EVIDENCE unambiguous reviewed scene source required");args.addAll(List.of("--reviewed-ref",revision,"--reviewed-repo",config.getReviewedRepository().getAbsolutePath(),"--reviewed-config",config.getReviewedConfig()));}
-                t.setArgs(args);
+                setArguments(project, t, "scenes", args);
             });
         });
+    }
+    private static Properties sceneSettings(FrontendContractExtension config) {
+        Properties properties = new Properties();
+        if (config.getContract() == null || !config.getContract().isFile()) return properties;
+        try (var reader = java.nio.file.Files.newBufferedReader(config.getContract().toPath())) {
+            properties.load(reader);
+            return properties;
+        } catch (java.io.IOException e) {
+            throw new GradleException("Cannot read frontend scene configuration", e);
+        }
+    }
+    private static void setArguments(Project project, JavaExec task, String name, List<String> arguments) {
+        var file = project.getLayout().getBuildDirectory().file("frontend-contract-lock/" + name + ".args")
+                .get().getAsFile().toPath();
+        try {
+            task.setArgs(CheckerArguments.write(file, arguments));
+        } catch (java.io.IOException e) {
+            throw new GradleException("Cannot write frontend checker arguments", e);
+        }
     }
 }

@@ -34,17 +34,36 @@ public final class UiCards {
     private UiCards() {
     }
 
+    /** Draws a card with an explicit palette and no click feedback. */
+    public static void drawCard(Canvas canvas, float x, float y, float w, float h,
+                                float radius, float hoverWeight, DesignHost theme) {
+        int fill = UiTokens.cardFill(theme);
+        paintCard(canvas, x, y, w, h, radius, hoverWeight,
+                UiTokens.CARD_SHADOW, UiTokens.CONTENT_SHADOW_BLUR, fill, theme, outline(theme));
+    }
+
     /** Instance palette path. Never installs or reads global Design state. */
     public static void drawCard(Canvas canvas, float x, float y, float w, float h,
                                 float radius, float hoverWeight, DesignHost host, Design.RippleSink ripple) {
-        int fill=UiTokens.cardFill(host);
-        ripple.region(x,y,w,h,radius,fill);
-        SkiaDraw.drawRoundedShadow(canvas,x,y,w,h,radius,UiTokens.CONTENT_SHADOW_BLUR,UiTokens.CARD_SHADOW);
-        SkiaDraw.drawRoundedRect(canvas,x,y,w,h,radius,fill);
-        int base=UiTokens.cardCutout(host);
-        int outline=host instanceof AtomChatControlStyle style&&style.outlineColor()!=0?style.outlineColor():UiTokens.hairline(base);
-        SkiaDraw.drawEdgeHighlight(canvas,x,y,w,h,radius,UiTokens.s(1),outline);
-        if(hoverWeight>0.01f)SkiaDraw.drawRoundedRect(canvas,x,y,w,h,radius,UiTokens.cardHover(host.accentColor(),base,hoverWeight));
+        int fill = UiTokens.cardFill(host);
+        ripple.region(x, y, w, h, radius, fill);
+        paintCard(canvas, x, y, w, h, radius, hoverWeight,
+                UiTokens.CARD_SHADOW, UiTokens.CONTENT_SHADOW_BLUR, fill, host, outline(host));
+    }
+
+    /** Explicit shadow and face for host-specific surfaces such as notifications. */
+    public static void drawCard(Canvas canvas, float x, float y, float w, float h,
+                                float radius, float hoverWeight, int shadowColor, float shadowBlur,
+                                int baseFill, DesignHost host, Design.RippleSink ripple) {
+        ripple.region(x, y, w, h, radius, baseFill);
+        paintCard(canvas, x, y, w, h, radius, hoverWeight, shadowColor, shadowBlur, baseFill, host, outline(host));
+    }
+
+    private static int outline(DesignHost host) {
+        if (host instanceof AtomChatControlStyle style && style.outlineColor() != 0) {
+            return style.outlineColor();
+        }
+        return UiTokens.hairline(host);
     }
 
     /** Filters only the current rounded backdrop; call before the card's alpha layer. */
@@ -65,6 +84,7 @@ public final class UiCards {
     }
 
     /** Draws the full card stack; {@code hoverWeight} 0..1. */
+    @Deprecated(since = "0.6.0")
     public static void drawCard(Canvas canvas, float x, float y, float w, float h,
                                 float radius, float hoverWeight) {
         drawCard(canvas, x, y, w, h, radius, hoverWeight, UiTokens.CARD_SHADOW, UiTokens.CONTENT_SHADOW_BLUR);
@@ -75,6 +95,7 @@ public final class UiCards {
      * 0..1. Notifications supply their card fill with a readability floor;
      * action feedback retains its separate {@link #drawFloatSurface} material.
      */
+    @Deprecated(since = "0.6.0")
     public static void drawCard(Canvas canvas, float x, float y, float w, float h,
                                 float radius, float hoverWeight, int shadowColor, float shadowBlur) {
         drawCard(canvas, x, y, w, h, radius, hoverWeight, shadowColor, shadowBlur,
@@ -86,18 +107,23 @@ public final class UiCards {
      * not the configured card colour. Content surfaces keep
      * {@link UiTokens#cardFill()} through the overloads above.
      */
+    @Deprecated(since = "0.6.0")
     public static void drawCard(Canvas canvas, float x, float y, float w, float h,
                                 float radius, float hoverWeight, int shadowColor, float shadowBlur,
                                 int baseFill) {
         Design.ripple(x, y, w, h, radius, baseFill);
+        DesignHost host = Design.host();
+        paintCard(canvas, x, y, w, h, radius, hoverWeight, shadowColor, shadowBlur, baseFill, host, UiTokens.hairline(host));
+    }
+
+    private static void paintCard(Canvas canvas, float x, float y, float w, float h,
+                                  float radius, float hoverWeight, int shadowColor, float shadowBlur,
+                                  int baseFill, DesignHost host, int outline) {
         SkiaDraw.drawRoundedShadow(canvas, x, y, w, h, radius, shadowBlur, shadowColor);
         SkiaDraw.drawRoundedRect(canvas, x, y, w, h, radius, baseFill);
-        // The hairline language: one stroke width, alpha 42 on both
-        // polarities, so a card edge reads as an edge, not a frame.
-        SkiaDraw.drawEdgeHighlight(canvas, x, y, w, h, radius, UiTokens.s(1.0F),
-                UiTokens.hairline());
+        SkiaDraw.drawEdgeHighlight(canvas, x, y, w, h, radius, UiTokens.s(1.0F), outline);
         if (hoverWeight > 0.01F) {
-            SkiaDraw.drawRoundedRect(canvas, x, y, w, h, radius, UiTokens.cardHover(hoverWeight));
+            SkiaDraw.drawRoundedRect(canvas, x, y, w, h, radius, UiTokens.cardHover(hoverWeight, host));
         }
     }
 
@@ -113,8 +139,14 @@ public final class UiCards {
      * whose fill is not the card colour still gets an edge and a wash that match
      * it.
      */
+    @Deprecated(since = "0.6.0")
     public static void drawFloatSurface(Canvas canvas, float x, float y, float w, float h,
                                         float radius, float hoverWeight, int baseFill) {
+        drawFloatSurface(canvas, x, y, w, h, radius, hoverWeight, baseFill, Design.host());
+    }
+
+    public static void drawFloatSurface(Canvas canvas, float x, float y, float w, float h,
+                                        float radius, float hoverWeight, int baseFill, DesignHost host) {
         SkiaDraw.drawChromeShadow(canvas, x, y, w, h, radius,
                 UiTokens.FLOAT_SHADOW_INNER, UiTokens.FLOAT_SHADOW_OUTER);
         SkiaDraw.drawRoundedRect(canvas, x, y, w, h, radius, baseFill);
@@ -122,7 +154,7 @@ public final class UiCards {
                 UiTokens.hairline(baseFill));
         if (hoverWeight > 0.01F) {
             SkiaDraw.drawRoundedRect(canvas, x, y, w, h, radius, UiTokens.cardHover(
-                    Design.host().accentColor(), baseFill, hoverWeight));
+                    host.accentColor(), baseFill, hoverWeight));
         }
     }
 }

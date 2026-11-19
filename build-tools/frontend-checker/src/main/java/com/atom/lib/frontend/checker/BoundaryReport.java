@@ -6,7 +6,9 @@ import java.util.Set;
 
 public record BoundaryReport(List<String> diagnostics, Map<String,String> uiStructures,
                              Map<String,Set<String>> categories,Map<String,Set<String>> dependencies,
-                             Map<String,String> implementationStructures,Map<String,Set<String>> implementationDependencies) {
+                             Map<String,String> implementationStructures,Map<String,Set<String>> implementationDependencies,
+                             Map<String,String> compositionSnapshots) {
+    public BoundaryReport(List<String> diagnostics,Map<String,String> structures,Map<String,Set<String>> categories,Map<String,Set<String>> dependencies,Map<String,String> implementations,Map<String,Set<String>> implementationDependencies){this(diagnostics,structures,categories,dependencies,implementations,implementationDependencies,Map.of());}
     public BoundaryReport(List<String> diagnostics,Map<String,String> structures,Map<String,Set<String>> categories,Map<String,Set<String>> dependencies,Map<String,String> implementations){this(diagnostics,structures,categories,dependencies,implementations,Map.of());}
     public BoundaryReport(List<String> diagnostics,Map<String,String> structures,Map<String,Set<String>> categories,Map<String,Set<String>> dependencies){this(diagnostics,structures,categories,dependencies,Map.of());}
     public BoundaryReport(List<String> diagnostics,Map<String,String> structures) {this(diagnostics,structures,Map.of(),Map.of());}
@@ -17,6 +19,15 @@ public record BoundaryReport(List<String> diagnostics, Map<String,String> uiStru
         implementationDependencies=implementationDependencies.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,e->Set.copyOf(e.getValue())));
         categories=categories.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,e->Set.copyOf(e.getValue())));
         dependencies=dependencies.entrySet().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey,e->Set.copyOf(e.getValue())));
+        compositionSnapshots=Map.copyOf(compositionSnapshots);
     }
     public boolean valid() { return diagnostics.isEmpty(); }
+    public String compositionSnapshot(String symbol) {
+        return compositionSnapshots.get(symbol);
+    }
+    static String compositionSnapshot(String method, Set<String> calls, Set<String> constants, Set<String> fields) {
+        return method + "\nresolved calls:\n" + String.join("\n", calls)
+                + "\nreferenced constants:\n" + String.join("\n", constants)
+                + "\nreferenced fields:\n" + String.join("\n", fields);
+    }
 }

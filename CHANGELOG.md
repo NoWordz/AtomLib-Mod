@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.6.0
+
+**新增**
+
+- 新增前端契约及 Gradle 检查器，可对照独立审定版本校验组件、实现依赖、资源、交互和声音。
+- 严格页面支持嵌套分组、独立滚动与折叠、数值编辑及命名反馈音。
+- 新增显式宿主样式和波纹回调入口，可在底层绘制中隔离外观与反馈。
+
+**更改**
+
+- 弃用隐式全局外观与波纹入口，保留现有宿主的二进制兼容和原有共享语义。
+
+**说明**
+
+- 与 AtomChat 0.9.1 候选配对验收历史设置和服务端托管，NeoForge 实机确认反馈音正常且与 Module Shop 共存时主题隔离。
+- 分发包包括 Minecraft 1.20.1 Forge、1.21.1 Fabric 和 NeoForge 的 JAR，以及开发者用的本地 Maven ZIP。
+
+----
+
+**Added**
+
+- Added frontend contracts and a Gradle checker for comparing components, implementation dependencies, resources, interactions and sound against an independently reviewed revision.
+- Strict pages support nested groups, independent scrolling and folding, numeric editing and named feedback sounds.
+- Added explicit host styling and ripple callbacks for isolated appearance and feedback in low-level drawing.
+
+**Changed**
+
+- Deprecated implicit global appearance and ripple entries while preserving binary compatibility and their shared semantics.
+
+**Notes**
+
+- Tested the paired AtomChat 0.9.1 candidate's history settings and server hosting in NeoForge, including feedback sounds and theme isolation alongside Module Shop.
+- Distributed Minecraft 1.20.1 Forge and 1.21.1 Fabric and NeoForge JARs, plus a local Maven ZIP for developers.
+
 ## v0.5.0
 
 **新增**

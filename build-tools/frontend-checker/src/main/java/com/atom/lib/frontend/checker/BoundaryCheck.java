@@ -42,6 +42,7 @@ public final class BoundaryCheck {
             Map<String,String> implementationStructures=new TreeMap<>();
             Map<String,Set<String>> typeDependencies=new TreeMap<>();
             Set<String> externalUi = new TreeSet<>();
+            Set<String> generatedRecordAccessors = new HashSet<>();
             for (CompilationUnitTree unit : units) {
                 new TreePathScanner<Void, Node>() {
                     @Override public Void visitClass(ClassTree t, Node unused) {
@@ -52,16 +53,39 @@ public final class BoundaryCheck {
                         }
                         return super.visitClass(t, null);
                     }
-                    private void typeReference(){
+                    private void typeReference(Node node){
                         Element target=trees.getElement(getCurrentPath());
+                        if (node != null && target instanceof VariableElement field
+                                && (field.getKind() == ElementKind.FIELD || field.getKind() == ElementKind.ENUM_CONSTANT)) {
+                            String owner = task.getElements().getBinaryName((TypeElement) field.getEnclosingElement()).toString();
+                            Object constant = field.getConstantValue();
+                            if (constant != null) {
+                                var value = Base64.getEncoder().encodeToString(constant.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                                node.constants.add(owner + "#" + field.getSimpleName() + "=" + value);
+                            } else {
+                                node.fields.add(fieldSymbol(owner, field.getSimpleName().toString()));
+                            }
+                        }
                         while(target!=null&&!(target instanceof TypeElement))target=target.getEnclosingElement();
                         if(!(target instanceof TypeElement dependency))return;
                         TreePath owner=getCurrentPath();while(owner!=null&&!(owner.getLeaf() instanceof ClassTree))owner=owner.getParentPath();
                         if(owner!=null&&trees.getElement(owner) instanceof TypeElement type)
                             typeDependencies.computeIfAbsent(task.getElements().getBinaryName(type).toString(),k->new TreeSet<>()).add(task.getElements().getBinaryName(dependency).toString());
                     }
-                    @Override public Void visitIdentifier(IdentifierTree t,Node node){typeReference();return super.visitIdentifier(t,node);}
-                    @Override public Void visitMemberSelect(MemberSelectTree t,Node node){typeReference();return super.visitMemberSelect(t,node);}
+                    @Override public Void visitIdentifier(IdentifierTree t,Node node){typeReference(node);return super.visitIdentifier(t,node);}
+                    @Override public Void visitMemberSelect(MemberSelectTree t,Node node){typeReference(node);return super.visitMemberSelect(t,node);}
+                    @Override public Void visitVariable(VariableTree tree, Node current) {
+                        Element element = trees.getElement(getCurrentPath());
+                        if (current == null && element instanceof VariableElement field
+                                && (field.getKind() == ElementKind.FIELD || field.getKind() == ElementKind.ENUM_CONSTANT)) {
+                            String owner = task.getElements().getBinaryName((TypeElement) field.getEnclosingElement()).toString();
+                            String key = fieldSymbol(owner, field.getSimpleName().toString());
+                            current = new Node(key, tree.toString(), false, unit.getSourceFile().getName() + ":"
+                                    + unit.getLineMap().getLineNumber(trees.getSourcePositions().getStartPosition(unit, tree)));
+                            nodes.put(key, current);
+                        }
+                        return super.visitVariable(tree, current);
+                    }
                     @Override public Void visitMethod(MethodTree t, Node unused) {
                         Element e = trees.getElement(getCurrentPath());
                         if (!(e instanceof ExecutableElement method)) return null;
@@ -93,6 +117,12 @@ public final class BoundaryCheck {
                         }
                         String key = symbol(method,task.getElements());
                         String declaring=method.getEnclosingElement().toString();
+                        if(method.getEnclosingElement() instanceof TypeElement record && record.getKind()==ElementKind.RECORD
+                                && trees.getTree(method)==null
+                                && record.getRecordComponents().stream().anyMatch(c->c.getAccessor().equals(method))){
+                            TreePath declaration=trees.getPath(record);
+                            if(declaration!=null&&units.contains(declaration.getCompilationUnit()))generatedRecordAccessors.add(key);
+                        }
                         boolean dsl=closedPageApi(declaring,method.getSimpleName().toString());
                         boolean rawCapability=Set.of("com.atom.lib.geometry.Rect","com.atom.lib.layout.LayoutStyle","com.atom.lib.motion.MotionSpec","com.atom.lib.frontend.contract.ContractCodec","com.atom.lib.frontend.contract.DesignResolver","com.atom.lib.frontend.StrictPageSession","com.atom.lib.frontend.StrictPageHost","com.atom.lib.controls.HostedControl").contains(declaring)
                             || declaring.equals("com.atom.lib.frontend.contract.ContractDesign")||declaring.startsWith("com.atom.lib.frontend.contract.ContractDesign.")
@@ -134,6 +164,14 @@ public final class BoundaryCheck {
                     }
                 }.scan(unit,null);
             }
+            for(String binding:policy.compositions().keySet()){
+                Node node=nodes.get(binding);
+                if(node!=null)node.categories.add("HOST_COMPOSITION");
+            }
+            for (String binding : policy.dispatch().keySet()) {
+                Node node = nodes.get(binding);
+                if (node != null) node.categories.add("HOST_DISPATCH");
+            }
             Set<String> ui = new TreeSet<>(externalUi);
             nodes.values().stream().filter(n -> !n.categories.isEmpty()).forEach(n -> ui.add(n.key));
             boolean changed;
@@ -147,7 +185,8 @@ public final class BoundaryCheck {
             }
             Set<String> strictClosure = new HashSet<>();
             for(Node n:nodes.values()) for(String call:n.calls) {
-                if(!nodes.containsKey(call) && !policy.trustedMethods().contains(call)&&!policy.businessMethods().contains(call) && !n.drawing.contains(call)
+                if(!nodes.containsKey(call) && !generatedRecordAccessors.contains(call)
+                    && !policy.trustedMethods().contains(call)&&!policy.businessMethods().contains(call) && !n.drawing.contains(call)
                     && !call.startsWith("java.") && !call.startsWith("javax.")&&!closedPageSymbol(call)) n.unsupported.add(call);
             }
             Set<String> strictEntries=new TreeSet<>(policy.strictEntries());
@@ -159,13 +198,57 @@ public final class BoundaryCheck {
             for (Map.Entry<String,String> entry : structures.entrySet()) {
                 Node n = nodes.get(entry.getKey());
                 if (strictClosure.contains(n.key)) continue;
+                if (policy.compositions().containsKey(n.key) || policy.dispatch().containsKey(n.key)) continue;
                 String owner=n.key.substring(0,n.key.indexOf('#'));
-                if(policy.enforceImplementations()&&policy.implementations().containsKey(owner)&&Objects.equals(policy.implementations().get(owner),implementationStructures.get(owner)))continue;
+                if(policy.enforceImplementations()&&policy.implementations().containsKey(owner)&&sameStructure(policy.implementations().get(owner),implementationStructures.get(owner)))continue;
                 String old = policy.legacy().get(n.key);
                 if (old == null) diagnostics.add("UNCOVERED_ENTRY " + n.key + " at " + n.location + " register a strict entry or review legacy scope");
-                else if (!old.equals(entry.getValue())) diagnostics.add("LEGACY_UI_CHANGED " + n.key + " at " + n.location + " reviewed method structure differs");
+                else if (!sameStructure(old, entry.getValue())) diagnostics.add("LEGACY_UI_CHANGED " + n.key + " at " + n.location + " reviewed method structure differs");
             }
-            for (String old : policy.legacy().keySet()) if (!structures.containsKey(old) && !policy.strictEntries().contains(old)) diagnostics.add("LEGACY_UI_CHANGED " + old + " removed or moved entry needs classification");
+            for (var entry : policy.legacy().entrySet()) {
+                String symbol = entry.getKey();
+                if (policy.businessMethods().contains(symbol)) {
+                    // A deployed data port can be part of the exact legacy inventory
+                    // even if its body never reaches a drawing method.
+                    Node node = nodes.get(symbol);
+                    if (node == null || !sameStructure(entry.getValue(), node.structure)) {
+                        diagnostics.add("LEGACY_DATA_CHANGED " + symbol + " reviewed method structure differs");
+                    }
+                } else if (!structures.containsKey(symbol) && !policy.strictEntries().contains(symbol)) {
+                    diagnostics.add("LEGACY_UI_CHANGED " + symbol + " removed or moved entry needs classification");
+                }
+            }
+            // The existing mixed-route switch stays in the host. Its attributed body
+            // is exact, but its sibling branches stay in the ordinary legacy inventory.
+            // Dispatch is deliberately unavailable as a dependency of a selected composition.
+            for (var binding : policy.dispatch().entrySet()) {
+                Node node = nodes.get(binding.getKey());
+                if (node == null) {
+                    diagnostics.add("MISSING_HOST_DISPATCH " + binding.getKey());
+                } else if (!sameStructure(binding.getValue(), BoundaryReport.compositionSnapshot(
+                        node.structure, node.calls, node.constants, node.fields))) {
+                    diagnostics.add("HOST_DISPATCH_CHANGED " + node.key + " at " + node.location);
+                }
+            }
+            for(var binding:policy.compositions().entrySet()){
+                Node node=nodes.get(binding.getKey());
+                if(node==null){diagnostics.add("MISSING_COMPOSITION "+binding.getKey());continue;}
+                if(!sameStructure(binding.getValue(), BoundaryReport.compositionSnapshot(node.structure,node.calls,node.constants,node.fields))){
+                    diagnostics.add("COMPOSITION_CHANGED "+node.key+" at "+node.location);
+                }
+                for(String call:node.compositionDependencies()){
+                    Node local=nodes.get(call);
+                    if (policy.dispatch().containsKey(call)) {
+                        diagnostics.add("COMPOSITION_DISPATCH_BYPASS " + node.key + " -> " + call);
+                        continue;
+                    }
+                    if(local!=null&&!policy.compositions().containsKey(call)
+                            &&!policy.implementations().containsKey(call.substring(0,call.indexOf('#')))
+                            &&!strictClosure.contains(call)&&!(policy.businessMethods().contains(call)&&policy.legacy().containsKey(call))){
+                        diagnostics.add("COMPOSITION_DEPENDENCY_UNBOUND "+node.key+" -> "+call);
+                    }
+                }
+            }
             Map<String,Set<String>> categories=new TreeMap<>(),dependencies=new TreeMap<>();
             if(policy.enforceImplementations()){
                 Set<String> closure=new TreeSet<>(policy.implementations().keySet());
@@ -173,13 +256,27 @@ public final class BoundaryCheck {
                 Deque<String> pending=new ArrayDeque<>(closure);
                 while(!pending.isEmpty()){String owner=pending.remove();for(String dependency:typeDependencies.getOrDefault(owner,Set.of()))if(implementationStructures.containsKey(dependency)&&closure.add(dependency))pending.add(dependency);}
                 for(String owner:closure)if(implementationStructures.containsKey(owner)&&!policy.implementations().containsKey(owner))diagnostics.add("MISSING_IMPLEMENTATION_BINDING "+owner+" trusted implementation dependency requires reviewed complete source structure");
-                policy.implementations().forEach((id,ast)->{String actual=implementationStructures.get(id);if(actual==null)diagnostics.add("MISSING_IMPLEMENTATION "+id+" expected reviewed implementation source");else if(!actual.equals(ast))diagnostics.add("IMPLEMENTATION_CHANGED "+id+" actual implementation/fields differ from reviewed semantic binding");});
+                policy.implementations().forEach((id,ast)->{String actual=implementationStructures.get(id);if(actual==null)diagnostics.add("MISSING_IMPLEMENTATION "+id+" expected reviewed implementation source");else if(!sameStructure(ast, actual))diagnostics.add("IMPLEMENTATION_CHANGED "+id+" actual implementation/fields differ from reviewed semantic binding");});
             }
-            for(String key:structures.keySet()) {
-                Node n=nodes.get(key);categories.put(key,n.categories.isEmpty()?Set.of("UI_DEPENDENCY"):n.categories);dependencies.put(key,n.calls);
+            Map<String,String> compositionSnapshots=new TreeMap<>();
+            for (Node node : nodes.values()) {
+                compositionSnapshots.put(node.key, BoundaryReport.compositionSnapshot(node.structure,
+                        node.calls, node.constants, node.fields));
+                if (structures.containsKey(node.key)) {
+                    categories.put(node.key, node.categories.isEmpty() ? Set.of("UI_DEPENDENCY") : node.categories);
+                    dependencies.put(node.key, policy.compositions().containsKey(node.key)
+                            ? node.compositionDependencies() : node.calls);
+                }
             }
-            return new BoundaryReport(diagnostics,structures,categories,dependencies,implementationStructures,typeDependencies);
+            return new BoundaryReport(diagnostics,structures,categories,dependencies,implementationStructures,typeDependencies,compositionSnapshots);
         }
+    }
+
+    private static boolean sameStructure(String reviewed, String actual) {
+        if (reviewed.equals(actual)) return true;
+        // Javac's pretty printer uses the host line separator. Compare the AST
+        // text portably while preserving the original reviewed package bytes.
+        return actual != null && reviewed.replace("\r\n", "\n").equals(actual.replace("\r\n", "\n"));
     }
 
     private static boolean closedPageSymbol(String symbol){int split=symbol.indexOf('#'),end=symbol.indexOf('(',split);return split>0&&end>split&&closedPageApi(symbol.substring(0,split).replace('$','.'),symbol.substring(split+1,end));}
@@ -188,7 +285,7 @@ public final class BoundaryCheck {
         owner=owner.replace('$','.');
         if(owner.equals("com.atom.lib.frontend.ContractPage"))return method.equals("<init>");
         if(owner.equals("com.atom.lib.frontend.StrictPage"))return method.equals("builder");
-        if(owner.equals("com.atom.lib.frontend.StrictPage.Builder"))return Set.of("component","build").contains(method);
+        if(owner.equals("com.atom.lib.frontend.StrictPage.Builder"))return Set.of("component","group","build").contains(method);
         if(owner.equals("com.atom.lib.frontend.contract.ContractRegistry.PageHandle"))return method.equals("recipe");
         if(method.equals("<init>"))for(String item:Set.of("Text","Number","Image","BooleanValue","TextInput","NumberInput","BooleanInput","Action","Content"))if(owner.equals("com.atom.lib.frontend.StrictPage."+item))return true;
         return false;
@@ -213,6 +310,9 @@ public final class BoundaryCheck {
     static String symbol(ExecutableElement e,javax.lang.model.util.Elements elements) {
         return elements.getBinaryName((TypeElement)e.getEnclosingElement()) + "#" + e.getSimpleName() + "(" + e.getParameters().stream().map(p -> p.asType().toString()).collect(Collectors.joining(",")) + ")";
     }
+    private static String fieldSymbol(String owner, String field) {
+        return owner + "#<initializer:" + field + ">";
+    }
     private static final class Node {
         final String key, structure, location;
         final boolean host;
@@ -220,6 +320,12 @@ public final class BoundaryCheck {
         final Set<String> categories=new TreeSet<>();
         final Set<String> sound=new TreeSet<>();
         final Set<String> rawInputs=new TreeSet<>();
+        final Set<String> constants=new TreeSet<>(), fields=new TreeSet<>();
+        Set<String> compositionDependencies() {
+            var symbols = new TreeSet<>(calls);
+            symbols.addAll(fields);
+            return symbols;
+        }
         Node(String key, String structure, boolean host, String location) {
             this.key=key; this.structure=structure; this.host=host; this.location=location;
         }

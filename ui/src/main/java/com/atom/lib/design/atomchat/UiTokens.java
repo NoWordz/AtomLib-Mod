@@ -42,9 +42,13 @@ public final class UiTokens {
      * physical pixels — the default {@code 20} is factor 1, while 0 gives
      * hard 0-radius (pure square) calls on every surface.
      */
+    @Deprecated(since = "0.6.0")
     public static float radius(float v) {
-        return s(v) * radiusFactor(
-                Design.host().cornerRadius());
+        return radius(v, Design.host());
+    }
+
+    public static float radius(float v, DesignHost theme) {
+        return s(v) * radiusFactor(theme.cornerRadius());
     }
 
     /**
@@ -54,8 +58,13 @@ public final class UiTokens {
      * setting reaches the handle too instead of leaving a round capsule inside
      * an otherwise square control.
      */
+    @Deprecated(since = "0.6.0")
     public static float handleRadius(float side) {
-        return Math.min(side / 2.0F, radius(side / (2.0F * SCALE)));
+        return handleRadius(side, Design.host());
+    }
+
+    public static float handleRadius(float side, DesignHost theme) {
+        return Math.min(side / 2.0F, radius(side / (2.0F * SCALE), theme));
     }
 
     /**
@@ -81,8 +90,13 @@ public final class UiTokens {
      * the slider moves them all together. At the default knob it reproduces
      * s(16) in 1080p-basis pixels.
      */
+    @Deprecated(since = "0.6.0")
     public static float cardRadius() {
-        return radius(16);
+        return cardRadius(Design.host());
+    }
+
+    public static float cardRadius(DesignHost theme) {
+        return radius(16, theme);
     }
 
     /**
@@ -90,13 +104,23 @@ public final class UiTokens {
      * round at this one tier, one step looser than the card family, so the two
      * bars cannot drift apart. One token owns them both.
      */
+    @Deprecated(since = "0.6.0")
     public static float chromeRadius() {
-        return radius(18);
+        return chromeRadius(Design.host());
+    }
+
+    public static float chromeRadius(DesignHost theme) {
+        return radius(18, theme);
     }
 
     /** Edge-attached bars have a straight outer silhouette. */
+    @Deprecated(since = "0.6.0")
     public static float shellChromeRadius() {
-        return Design.host().halfScreenMode() ? 0F : chromeRadius();
+        return shellChromeRadius(Design.host());
+    }
+
+    public static float shellChromeRadius(DesignHost theme) {
+        return theme.halfScreenMode() ? 0F : chromeRadius(theme);
     }
 
     /**
@@ -107,6 +131,7 @@ public final class UiTokens {
      * separate language ({@link #cardHover(float)}) that follows the accent
      * at both ends of the axis.
      */
+    @Deprecated(since = "0.6.0")
     public static int cardFill() {
         return cardFill(Design.host());
     }
@@ -121,17 +146,26 @@ public final class UiTokens {
     }
 
     /** Notifications share card RGB/opacity, with a 50% readability floor. */
+    @Deprecated(since = "0.6.0")
     public static int notificationFill() {
-        int card = cardFill();
+        return notificationFill(Design.host());
+    }
+
+    public static int notificationFill(DesignHost theme) {
+        int card = cardFill(theme);
         return (Math.max(128, card >>> 24) << 24) | (card & 0x00FFFFFF);
     }
 
     public static final float NOTIFICATION_BLUR = s(6);
 
     /** Hover uses the configured accent RGB; only its fade opacity changes. */
+    @Deprecated(since = "0.6.0")
     public static int cardHover(float weight) {
-        return cardHover(Design.host().accentColor(),
-                cardCutout(), weight);
+        return cardHover(weight, Design.host());
+    }
+
+    public static int cardHover(float weight, DesignHost theme) {
+        return cardHover(theme.accentColor(), cardCutout(theme), weight);
     }
 
     /** Explicit palette overload; base no longer changes the accent hue. */
@@ -141,8 +175,13 @@ public final class UiTokens {
     }
 
     /** Selected surfaces match the configured accent swatch exactly. */
+    @Deprecated(since = "0.6.0")
     public static int accentFill() {
-        return Design.host().accentColor() | 0xFF000000;
+        return accentFill(Design.host());
+    }
+
+    public static int accentFill(DesignHost theme) {
+        return theme.accentColor() | 0xFF000000;
     }
 
     /** Parallel inner contour of an inset control, in layout units. */
@@ -177,8 +216,13 @@ public final class UiTokens {
      * Opaque, panel-composited fill for action feedback. Notifications instead
      * use {@link #notificationFill()} over a locally blurred backdrop.
      */
+    @Deprecated(since = "0.6.0")
     public static int floatSurfaceFill() {
-        return cardCutout();
+        return floatSurfaceFill(Design.host());
+    }
+
+    public static int floatSurfaceFill(DesignHost theme) {
+        return cardCutout(theme);
     }
 
     /**
@@ -255,6 +299,7 @@ public final class UiTokens {
      * while this pre-mix looks like a cut-out on frosted and opaque panels
      * alike.
      */
+    @Deprecated(since = "0.6.0")
     public static int cardCutout() {
         return cardCutout(Design.host());
     }
@@ -281,8 +326,13 @@ public final class UiTokens {
      * {@link #rim()}, the switch's functional rim, which needs real
      * visibility while it hugs the accent.
      */
+    @Deprecated(since = "0.6.0")
     public static int hairline() {
-        return hairline(cardCutout());
+        return hairline(Design.host());
+    }
+
+    public static int hairline(DesignHost theme) {
+        return hairline(cardCutout(theme));
     }
 
     /**
@@ -303,8 +353,13 @@ public final class UiTokens {
      * is the floor where that job still gets done. Polarity-adaptive like
      * every stroke: black on light, white on dark.
      */
+    @Deprecated(since = "0.6.0")
     public static int rim() {
-        return rim(cardCutout());
+        return rim(Design.host());
+    }
+
+    public static int rim(DesignHost theme) {
+        return rim(cardCutout(theme));
     }
 
     /** The rim pair as a pure function (the test seam). */
@@ -323,8 +378,13 @@ public final class UiTokens {
      * own deep grey (30, 30, 34), so the two control families read as one
      * neutral language.
      */
+    @Deprecated(since = "0.6.0")
     public static int trackRest() {
-        return trackRest(cardCutout());
+        return trackRest(Design.host());
+    }
+
+    public static int trackRest(DesignHost theme) {
+        return trackRest(cardCutout(theme));
     }
 
     /** The track-rest pair as a pure function (the test seam). */
@@ -340,22 +400,41 @@ public final class UiTokens {
      * beside them, so they take the configured secondary text RGB and only
      * rebalance its presence through {@code alpha}.
      */
+    @Deprecated(since = "0.6.0")
     public static int iconSecondary(float alpha) {
-        return withAlpha(
-                Design.host().textSecondaryColor(), alpha);
+        return iconSecondary(alpha, Design.host());
+    }
+
+    public static int iconSecondary(float alpha, DesignHost theme) {
+        return withAlpha(theme.textSecondaryColor(), alpha);
     }
 
     // Panel
+    @Deprecated(since = "0.6.0")
     public static float panelRadius() {
-        return Design.host().halfScreenMode() ? 0F : radius(28);
+        return panelRadius(Design.host());
     }
 
+    public static float panelRadius(DesignHost theme) {
+        return theme.halfScreenMode() ? 0F : radius(28, theme);
+    }
+
+    @Deprecated(since = "0.6.0")
     public static float panelInset() {
-        return Design.host().halfScreenMode() ? 0F : PANEL_BEZEL_WIDTH;
+        return panelInset(Design.host());
     }
 
+    public static float panelInset(DesignHost theme) {
+        return theme.halfScreenMode() ? 0F : PANEL_BEZEL_WIDTH;
+    }
+
+    @Deprecated(since = "0.6.0")
     public static float modalBackdropRadius() {
-        return Design.host().halfScreenMode() ? 0F : radius(12);
+        return modalBackdropRadius(Design.host());
+    }
+
+    public static float modalBackdropRadius(DesignHost theme) {
+        return theme.halfScreenMode() ? 0F : radius(12, theme);
     }
 
     /**
@@ -407,8 +486,13 @@ public final class UiTokens {
 
     // Header
     public static final float HEADER_HEIGHT = s(44);
+    @Deprecated(since = "0.6.0")
     public static float headerRadius() {
-        return Design.host().halfScreenMode() ? 0F : radius(16);
+        return headerRadius(Design.host());
+    }
+
+    public static float headerRadius(DesignHost theme) {
+        return theme.halfScreenMode() ? 0F : radius(16, theme);
     }
     public static final float HEADER_PAD_X = s(20);
     /**
@@ -440,7 +524,14 @@ public final class UiTokens {
     public static final int MODAL_SCRIM = 0x66000000;
     public static final float FOCUS_RING_WIDTH = s(1.5F);
     /** Shared capsule radius for composer and confirmation actions. */
-    public static float buttonRadius() { return radius(9); }
+    @Deprecated(since = "0.6.0")
+    public static float buttonRadius() {
+        return buttonRadius(Design.host());
+    }
+
+    public static float buttonRadius(DesignHost theme) {
+        return radius(9, theme);
+    }
     public static final float TOOL_ICON_STROKE = s(1.4F);
     public static final float DIALOG_MAX_WIDTH = s(390);
     public static final float DIALOG_STACK_WIDTH = s(230);
@@ -709,8 +800,13 @@ public final class UiTokens {
      * its label form one centred group inside that square.
      */
     public static final float SETTINGS_TILE_GAP = s(10);
+    @Deprecated(since = "0.6.0")
     public static float settingsTileRadius() {
-        return cardRadius();
+        return settingsTileRadius(Design.host());
+    }
+
+    public static float settingsTileRadius(DesignHost theme) {
+        return cardRadius(theme);
     }
     public static final float SETTINGS_TILE_ICON = s(34);
     public static final float SETTINGS_TILE_TITLE = s(15);
@@ -748,8 +844,13 @@ public final class UiTokens {
     public static final float SETTINGS_HERO_VERSION_RADIUS = s(5);
     public static final float SETTINGS_ROW_GAP = s(8);
     public static final float SETTINGS_ROW_PAD = s(14);
+    @Deprecated(since = "0.6.0")
     public static float settingsRowRadius() {
-        return cardRadius();
+        return settingsRowRadius(Design.host());
+    }
+
+    public static float settingsRowRadius(DesignHost theme) {
+        return cardRadius(theme);
     }
     /** Group heading inside a section (e.g. the blocked-players list title). */
     public static final float SETTINGS_LABEL_H = s(32);
@@ -822,8 +923,13 @@ public final class UiTokens {
     /** Info row height, compacted from s(48) in the QQ-home pass. */
     public static final float PROFILE_ROW_H = s(42);
     public static final float PROFILE_ROW_PAD = s(14);
+    @Deprecated(since = "0.6.0")
     public static float profileRowRadius() {
-        return cardRadius();
+        return profileRowRadius(Design.host());
+    }
+
+    public static float profileRowRadius(DesignHost theme) {
+        return cardRadius(theme);
     }
     public static final float PROFILE_ROW_FONT = s(15);
     public static final float PROFILE_ROW_VALUE_FONT = s(13);

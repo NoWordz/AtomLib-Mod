@@ -34,22 +34,54 @@ public final class ProjectCheck {
         List<String> changes="2".equals(c.getProperty("protocol"))?DesignDiff.compare(reviewedBytes,proposed,r,c):List.of();
         String status=ApprovalCheck.assess(reviewedBytes,proposed,values(r,"profiles"));
         if(!Set.of("APPROVED_VALID","CANDIDATE_VALID").contains(status)){var errors=new ArrayList<String>(integrationChanges);errors.add(status+" design identity/profile differs");errors.addAll(changes);return new Result(status,errors);}
+        var boundary = checkSource(c, r, proposed, sources, classpath, release, resourceRoots, dependencyInputs);
+        if (!boundary.diagnostics().isEmpty()) return boundary;
+        if(!c.equals(r) || !integrationChanges.isEmpty()) status="CANDIDATE_VALID";
+        if(status.equals("CANDIDATE_VALID")){integrationChanges.addAll(changes);integrationChanges.add("DESIGN_REVIEW_REQUIRED candidate/config changes cannot pass ordinary acceptance");}
+        return new Result(status,integrationChanges,boundary.inventory());
+    }
+    /** First enrollment validates the candidate's own proposed scope without admitting a runtime package. */
+    static Result firstEnrollment(Path current, List<Path> sources, List<Path> classpath, int release,
+                                  List<Path> resourceRoots, List<Path> dependencyInputs) throws Exception {
+        Properties config = load(current);
+        if (!"2".equals(config.getProperty("protocol"))) {
+            return new Result("UNSUPPORTED", List.of("UNSUPPORTED first enrollment requires protocol 2"));
+        }
+        byte[] candidate = proposed(current, config);
+        var design = com.atom.lib.frontend.contract.ContractCodec.decode(candidate);
+        if (!values(config, "profiles").contains(design.profile())) {
+            return new Result("INCOMPATIBLE_PROFILE", List.of("INCOMPATIBLE_PROFILE " + design.profile()));
+        }
+        var report = checkSource(config, config, candidate, sources, classpath, release, resourceRoots, dependencyInputs);
+        if (!report.diagnostics().isEmpty()) return report;
+        return new Result("CANDIDATE_VALID", List.of("DESIGN_REVIEW_REQUIRED first enrollment has no reviewed definition"),
+                report.inventory());
+    }
+
+    private static Result checkSource(Properties c, Properties r, byte[] proposed, List<Path> sources,
+                                      List<Path> classpath, int release, List<Path> resourceRoots,
+                                      List<Path> dependencyInputs) throws Exception {
         List<Path> resolved=new ArrayList<>(new LinkedHashSet<>(classpath));for(Path dependency:dependencyInputs)if(!resolved.contains(dependency))resolved.add(dependency);
         if("2".equals(c.getProperty("protocol"))){var resources=ResourceCheck.inspect(com.atom.lib.frontend.contract.ContractCodec.decode(proposed),resourceRoots,resolved,c);if(!resources.diagnostics().isEmpty())return new Result("INVALID",resources.diagnostics());}
         // Reviewed policy stays authoritative even when the candidate edits its policy.
         Map<String,String> legacy=new TreeMap<>();
         for(String k:r.stringPropertyNames()) if(k.startsWith("legacy.")) legacy.put(k.substring(7),new String(Base64.getDecoder().decode(r.getProperty(k)),java.nio.charset.StandardCharsets.UTF_8));
         Map<String,String> implementations=new TreeMap<>();for(String key:r.stringPropertyNames())if(key.startsWith("implementation."))implementations.put(key.substring(15),new String(Base64.getDecoder().decode(r.getProperty(key)),java.nio.charset.StandardCharsets.UTF_8));
-        if("2".equals(r.getProperty("protocol"))&&r.getProperty("scene.main")!=null&&!implementations.containsKey(r.getProperty("scene.main")))return new Result("INVALID",List.of("MISSING_IMPLEMENTATION_BINDING scene runner "+r.getProperty("scene.main")));
-        BoundaryPolicy policy=new BoundaryPolicy(values(r,"strict"),values(r,"trusted"),values(r,"drawingTypes"),values(r,"hostTypes"),values(r,"hostCallbacks"),legacy,implementations,"2".equals(r.getProperty("protocol")),values(r,"businessMethods"));
+        Map<String,String> compositions=new TreeMap<>();for(String key:r.stringPropertyNames())if(key.startsWith("composition."))compositions.put(key.substring(12),new String(Base64.getDecoder().decode(r.getProperty(key)),java.nio.charset.StandardCharsets.UTF_8));
+        Map<String,String> dispatch=new TreeMap<>();
+        for (String key : r.stringPropertyNames()) {
+            if (key.startsWith("dispatch.")) dispatch.put(key.substring(9), new String(
+                    Base64.getDecoder().decode(r.getProperty(key)), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        if("2".equals(r.getProperty("protocol"))&&r.getProperty("scene.main")!=null&&!SceneCheckerMain.hasRunnerBinding(r))return new Result("INVALID",List.of("MISSING_IMPLEMENTATION_BINDING scene runner "+r.getProperty("scene.main")));
+        BoundaryPolicy policy=new BoundaryPolicy(values(r,"strict"),values(r,"trusted"),values(r,"drawingTypes"),values(r,"hostTypes"),values(r,"hostCallbacks"),legacy,implementations,"2".equals(r.getProperty("protocol")),values(r,"businessMethods"),compositions,dispatch);
         BoundaryReport boundary=BoundaryCheck.inspect(sources,classpath,release,policy);
         List<String> inventory=MigrationInventory.describe(policy,boundary);
         if(!boundary.valid()) return new Result("INVALID",boundary.diagnostics(),inventory);
         if("2".equals(r.getProperty("protocol"))){var dependencyErrors=DependencyCheck.inspect(boundary,policy,resolved,c);if(!dependencyErrors.isEmpty())return new Result("INVALID",dependencyErrors);}
-        if(!c.equals(r) || !integrationChanges.isEmpty()) status="CANDIDATE_VALID";
-        if(status.equals("CANDIDATE_VALID")){integrationChanges.addAll(changes);integrationChanges.add("DESIGN_REVIEW_REQUIRED candidate/config changes cannot pass ordinary acceptance");}
-        return new Result(status,integrationChanges,inventory);
+        return new Result("SOURCE_VALID", List.of(), inventory);
     }
+
     public static byte[] proposed(Path config,Properties properties)throws Exception {
         String property="2".equals(properties.getProperty("protocol"))?"author":"design";
         String name=properties.getProperty(property);if(name==null)throw new IllegalArgumentException("MISSING_EVIDENCE "+property);

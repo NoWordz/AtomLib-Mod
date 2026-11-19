@@ -37,4 +37,34 @@ class ContractPageBoundaryTest {
         assertTrue(callbackEscape.diagnostics().stream().anyMatch(x->x.startsWith("PAGE_DRAWING ")&&x.contains("HostedControl")),callbackEscape.toString());
         assertFalse(callbackEscape.diagnostics().stream().anyMatch(x->x.startsWith("SOURCE_ANALYSIS_FAILED")),callbackEscape.toString());
     }
+
+    @Test void nestedBusinessContentIsAllowedButDrawingInGroupCallbackIsRejected()throws Exception{
+        String page="""
+            return StrictPage.builder(page).group("group",page.recipe("group"),group->{
+                %s
+                group.component("row",page.recipe("card"),
+                    new StrictPage.Content(Map.of("title",new StrictPage.Text("Business")),true));
+            }).build();
+            """;
+        var legal=inspect(page.formatted(""));
+        assertTrue(legal.valid(),legal.toString());
+        var illegal=inspect(page.formatted("Ink.rect(25);"));
+        assertTrue(illegal.diagnostics().stream().anyMatch(x->x.startsWith("PAGE_DRAWING ")&&x.contains("consumer.Ink")),illegal.toString());
+        assertFalse(illegal.diagnostics().stream().anyMatch(x->x.startsWith("SOURCE_ANALYSIS_FAILED")),illegal.toString());
+    }
+
+    @Test void sourceRecordReadsArePureButExplicitAccessorsStillHaveTheirBodiesChecked()throws Exception{
+        String build="""
+            var value=new Caption("Settings");
+            return StrictPage.builder(page).component("row",page.recipe("card"),
+                new StrictPage.Content(Map.of("title",new StrictPage.Text(value.label())),true)).build();
+            """;
+        var legal=inspect("record Caption(String label) {}\n"+build);
+        assertTrue(legal.valid(),legal.diagnostics().toString());
+        var illegal=inspect("record Caption(String label) { public String label(){Ink.rect(25);return label;} }\n"+build);
+        assertTrue(illegal.diagnostics().stream().anyMatch(x->x.startsWith("PAGE_DRAWING ")&&x.contains("consumer.Ink")),
+                illegal.diagnostics().toString());
+        assertFalse(illegal.diagnostics().stream().anyMatch(x->x.startsWith("SOURCE_ANALYSIS_FAILED")),
+                illegal.diagnostics().toString());
+    }
 }

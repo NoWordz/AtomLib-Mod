@@ -8,13 +8,14 @@
 
 AtomLib 是面向 Minecraft 模组的客户端 UI 库，组合了 [Skija](https://github.com/HumbleUI/Skija) 绘制、[Yoga](https://www.yogalayout.dev/) 布局与 Minecraft 渲染适配。页面、业务数据和生命周期仍由宿主模组管理。
 
-**v0.5.0** · [下载](https://github.com/NoWordz/AtomLib-Mod/releases) · [开始接入](docs/wiki/getting-started.md) · [使用文档](docs/wiki/Home.md) · [更新说明](RELEASE_NOTES.md)
+**v0.6.0** · [下载](https://github.com/NoWordz/AtomLib-Mod/releases) · [开始接入](docs/wiki/getting-started.md) · [使用文档](docs/wiki/Home.md) · [更新说明](RELEASE_NOTES.md)
 
 ## 主要能力
 
 - **按窗口隔离外观**：通过 `AtomDefault.createSession` 独立持有主题、动效、反馈与预览；旧全局主题被修改时，新会话不受影响。
 - **布局与交互**：用 Yoga 构建盒模型树，让绘制、裁剪和命中共享同一呈现帧。
 - **控件与编辑**：提供按钮、滑条、开关、选项、弹窗、单行/多行文本和数值草稿，支持字素选区、剪贴板及撤销/重做。
+- **前端契约**：提供分组式严格页面和 Gradle 检查器，校验已审定的设计、实现和回放。见[设计包](docs/wiki/design-package.md)。
 - **虚拟集合**：提供自适应卡片网格、固定行高表格、稳定条目 ID、排序表头意图与行内动作；加载、排序和持久化归宿主。
 - **文字与图片**：支持宿主字体或内置 Noto Sans SC 子集、文字量测与绘制、图片资源管理及可选的超大图片预处理。
 - **动效与渲染**：提供显式帧时钟、弹簧、可中断过渡、平滑滚动、可选背景模糊和原版物品图标适配。
@@ -33,7 +34,7 @@ AtomLib 是面向 Minecraft 模组的客户端 UI 库，组合了 [Skija](https:
 
 从 [Releases](https://github.com/NoWordz/AtomLib-Mod/releases) 下载匹配 Minecraft 版本与加载器的 JAR，与兼容的宿主模组一起放入 `mods/`。依赖版本范围符合要求，不等于 API 必然兼容。
 
-模组开发者可下载发行附件 `atomlib-input-0.5.0.zip`，解压为本地 Maven 仓库；这是开发输入包，不应放入 `mods/`。坐标与各加载器的依赖写法见[开始接入](docs/wiki/getting-started.md)。目前没有托管的公共 Maven 仓库。
+模组开发者可将发行附件 `atomlib-input-0.6.0.zip` 解压为本地 Maven 仓库。坐标与各加载器的依赖写法见[开始接入](docs/wiki/getting-started.md)。
 
 ## 接入一个界面
 
@@ -58,7 +59,7 @@ ui.close();
 
 ## 使用边界
 
-- API 仍在演进。0.5.0 保留已检查的 0.4 公共符号，不代表所有现有宿主都已兼容验证。
+- 已弃用的全局外观方法保留二进制兼容和共享状态。宿主可用独立会话或显式宿主参数获得隔离。
 - 编辑器支持普通从左到右文字与文字提交事件。游戏内中文输入法提交、焦点和组字行为仍需逐平台验证；完整双向文字与富文本编辑不在范围内。
 - 集合使用固定行高或卡片高度；不提供单元格编辑、冻结列、树形表格或复杂多选。
 - 背景模糊需要显式调用实际背景处理，不可用时回退为实底；物品图标与模糊都需遵守渲染线程、状态和资源生命周期合同。

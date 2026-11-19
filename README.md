@@ -8,13 +8,14 @@
 
 AtomLib is a client-side UI library for Minecraft mods. It combines [Skija](https://github.com/HumbleUI/Skija) drawing, [Yoga](https://www.yogalayout.dev/) layout and Minecraft rendering adapters. Your mod owns its screens, business data and lifecycle.
 
-**v0.5.0** · [Downloads](https://github.com/NoWordz/AtomLib-Mod/releases) · [Getting started](docs/wiki/getting-started.md) · [API guides](docs/wiki/English.md) · [Release notes](RELEASE_NOTES.md)
+**v0.6.0** · [Downloads](https://github.com/NoWordz/AtomLib-Mod/releases) · [Getting started](docs/wiki/getting-started.md) · [API guides](docs/wiki/English.md) · [Release notes](RELEASE_NOTES.md)
 
 ## Features
 
 - **Window-local appearance** — independent themes, motion policies, feedback and previews through `AtomDefault.createSession`. New sessions are unaffected by legacy global theme changes.
 - **Layout and interaction** — Yoga box trees and a shared presentation frame for drawing, clipping and hit testing.
 - **Controls and editing** — buttons, sliders, toggles, choices, dialogs, single-line/multiline text and numeric drafts, with grapheme selection, clipboard and undo/redo.
+- **Frontend contracts** — grouped strict pages and a Gradle checker for approved design, implementation and replay evidence. See [Design packages](docs/wiki/design-package.md).
 - **Virtual collections** — adaptive card grids and fixed-height tables with stable item keys, sortable header intents and inline actions. The host owns loading, sorting and persistence.
 - **Text and images** — host fonts or bundled Noto Sans SC subsets, text measurement/drawing, image resources and optional oversized-image preprocessing.
 - **Motion and rendering** — explicit frame clocks, springs, interruptible transitions, smooth scrolling, optional backdrop blur and native Minecraft item-icon adapters.
@@ -33,7 +34,7 @@ These are build baselines, not a promise of validation on every loader, renderer
 
 Download the JAR matching your Minecraft version and loader from [Releases](https://github.com/NoWordz/AtomLib-Mod/releases), then place it in `mods/` alongside a compatible consuming mod. A dependency version range alone does not establish API compatibility.
 
-For mod development, the release also includes `atomlib-input-0.5.0.zip`: extract it as a local Maven repository. It is a developer input, not a mod to put in `mods/`. Coordinates and loader-specific dependency syntax are in [Getting started](docs/wiki/getting-started.md). There is no hosted public Maven repository.
+For mod development, extract `atomlib-input-0.6.0.zip` as a local Maven repository. Coordinates and loader-specific dependency syntax are in [Getting started](docs/wiki/getting-started.md).
 
 ## Start a screen
 
@@ -58,7 +59,7 @@ Forward pointer, key down/up, committed text, wheel, window-focus and removal ev
 
 ## Boundaries
 
-- The API is still evolving. Version 0.5.0 retains the checked 0.4 public symbols; this does not promise compatibility with every existing host.
+- The deprecated global design APIs retain their binary compatibility and shared state. Use a session or explicit host arguments for isolation.
 - Editors support plain left-to-right text and committed text events. In-game Chinese IME submission, focus and composition behaviour still need platform validation. Full bidi and rich-text editing are outside scope.
 - Collections use fixed row/card heights. Editable cells, frozen columns, tree tables and complex multiselection are outside scope.
 - Background blur requires an explicit backdrop operation and has an opaque fallback. Item icons and blur have render-thread/state/lifetime contracts.

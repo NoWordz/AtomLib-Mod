@@ -24,6 +24,19 @@ class CheckerRuntimeOutputTest {
     private Map.Entry<Integer,String> run(Path current,Path reviewed,Path source,Path output)throws Exception{
         String tool=Path.of(CheckerMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();String core=Path.of(ContractDesign.class.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();
         var executable=Path.of(System.getProperty("java.home"),"bin",System.getProperty("os.name").startsWith("Windows")?"java.exe":"java");
-        var p=new ProcessBuilder(executable.toString(),"-cp",tool+java.io.File.pathSeparator+core,CheckerMain.class.getName(),"--config",current.resolve("contract.properties").toString(),"--reviewed",reviewed.resolve("contract.properties").toString(),"--source",source.toString(),"--report",root.resolve("report.txt").toString(),"--runtime-output",output.toString()).redirectErrorStream(true).start();String text=new String(p.getInputStream().readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);return Map.entry(p.waitFor(),text);
+        var invocation = new java.util.ArrayList<>(List.of(executable.toString(), "-cp",
+                tool + java.io.File.pathSeparator + core, CheckerMain.class.getName()));
+        // A real consumer catalog is larger than a Windows process command line.
+        var arguments = new java.util.ArrayList<>(List.of("--config", current.resolve("contract.properties").toString(),
+                "--reviewed", reviewed.resolve("contract.properties").toString(), "--source", source.toString(),
+                "--report", root.resolve("report.txt").toString(), "--runtime-output", output.toString()));
+        for (int i = 0; i < 150; i++) {
+            arguments.add("--dependency");
+            arguments.add(root.resolve("unused path with spaces").resolve(("part-" + i + "-").repeat(30)).toString());
+        }
+        invocation.addAll(CheckerArguments.write(root.resolve("build arguments.txt"), arguments));
+        var p = new ProcessBuilder(invocation).redirectErrorStream(true).start();
+        String report = new String(p.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        return Map.entry(p.waitFor(), report);
     }
 }
