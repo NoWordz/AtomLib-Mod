@@ -123,7 +123,9 @@ jobs:
         working-directory: platforms/${{ matrix.target }}
         run: |
           chmod +x gradlew
-          xvfb-run -a ./gradlew hiddenGlTest --no-daemon --console=plain
+          # GLFW disconnects from X11 between test classes. Keep Xvfb from
+          # resetting before the next class reconnects.
+          xvfb-run -a -s '-screen 0 1280x1024x24 -noreset' ./gradlew hiddenGlTest --no-daemon --console=plain
       - uses: actions/upload-artifact@v7
         if: always()
         with:
