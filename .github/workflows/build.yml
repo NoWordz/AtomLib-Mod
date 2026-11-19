@@ -160,7 +160,12 @@ jobs:
           python tools/verify_ui_examples.py
       - name: Archive pinned Maven input
         shell: pwsh
-        run: python tools/package_maven_input.py
+        env:
+          JAVA_HOME: ${{ steps.java17.outputs.java-home }}
+        run: |
+          .\gradlew.bat :publishToTestRepository --no-daemon --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/package_maven_input.py
       - uses: actions/upload-artifact@v7
         with:
           name: atomlib-local-maven

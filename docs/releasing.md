@@ -9,10 +9,11 @@ Use JDK 17 for common tests and Forge, and JDK 21 for Fabric/NeoForge. `tools/ru
 ```powershell
 .\gradlew.bat :core:test :runtime:test :ui:test --no-daemon "-PatomlibTestFont=C:/path/to/font.ttf"
 python tools/run_packaging.py all --jobs 1
+.\gradlew.bat :publishToTestRepository --no-daemon
 python tools/package_maven_input.py
 ```
 
-The packaging command builds the three platform distributions, publishes their merged coordinates to `build/test-maven`, verifies JAR contents/natives, and checks six isolated example consumers plus pure Maven probes. Fabric consumer checks clear the relevant Loom remap cache before resolving a same-version input.
+The packaging command builds the three platform distributions, publishes their merged coordinates to `build/test-maven`, verifies JAR contents/natives, and checks six isolated example consumers plus pure Maven probes. Run the root publication task with JDK 17 to add the standalone core, runtime, UI and frontend checker to the same Maven tree. Fabric consumer checks clear the relevant Loom remap cache before resolving a same-version input.
 
 `package_maven_input.py` archives the local Maven tree and writes its checksum. Before running it for a release, ensure that tree contains the intended version and no unrelated historical artifacts.
 
