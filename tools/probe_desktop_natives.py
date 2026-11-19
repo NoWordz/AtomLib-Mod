@@ -45,6 +45,37 @@ def lwjgl_classpath(version, classifier, directory):
         yield jar
 
 
+def run_probe(java, classpath, game, platform, java_version, directory, mode):
+    directory.mkdir()
+    source = 'offline' if mode == 'cold-offline' else mode
+    result = subprocess.run(
+        [java, f'-Djava.io.tmpdir={directory}', f'-Djava.library.path={directory}',
+         f'-Datomlib.natives.source={source}', '-Xlog:library=info', '-cp', classpath,
+         'PackagedNativeProbe', str(game), platform, java_version, mode],
+        cwd=game, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        encoding='utf-8', errors='replace', timeout=100,
+    )
+    windows = platform.startswith('windows-')
+    extension = 'dll' if windows else 'dylib' if platform.startswith('macos-') else 'so'
+    prefix = '' if windows else 'lib'
+    libraries = {f'{prefix}{library}.{extension}' for library in ('skija', 'lwjgl_yoga')}
+    load_root = (directory if windows else game / 'atomlib/natives' / platform).resolve()
+    loaded = set()
+    for line in result.stdout.splitlines():
+        if '[library]' not in line:
+            print(line, flush=True)
+        if '[library] Loaded library ' in line:
+            path = Path(line.split('Loaded library ', 1)[1].rsplit(', handle ', 1)[0])
+            if path.name in libraries:
+                print(line, flush=True)
+                if path.resolve().is_relative_to(load_root):
+                    loaded.add(path.name)
+    result.check_returncode()
+    expected = set() if mode == 'cold-offline' else libraries
+    if loaded != expected:
+        raise ValueError(f'{mode}: expected {sorted(expected)} loaded from {load_root}, got {sorted(loaded)}')
+
+
 def probe(target, jars, platform, directory):
     label = LOADER_LABELS[target['loader']]
     java_version = str(target['java'])
@@ -62,15 +93,10 @@ def probe(target, jars, platform, directory):
 
     # A fresh JVM and native extraction directory for each run. Only the mod's
     # verified instance cache survives the transition from auto to offline.
-    modes = ('offline',) if platform.startswith('windows-') else ('auto', 'offline')
-    for source in modes:
-        native_tmp = directory / source
-        native_tmp.mkdir()
-        subprocess.run([jdk / f'java{suffix}', f'-Djava.io.tmpdir={native_tmp}',
-                        f'-Djava.library.path={native_tmp}', f'-Datomlib.natives.source={source}',
-                        '-cp', os.pathsep.join((str(directory), classpath_arg)),
-                        'PackagedNativeProbe', str(game), platform, java_version],
-                       cwd=game, check=True, timeout=100)
+    modes = ('offline',) if platform.startswith('windows-') else ('cold-offline', 'auto', 'offline')
+    for mode in modes:
+        run_probe(jdk / f'java{suffix}', os.pathsep.join((str(directory), classpath_arg)),
+                  game, platform, java_version, directory / mode, mode)
 
 
 def main():

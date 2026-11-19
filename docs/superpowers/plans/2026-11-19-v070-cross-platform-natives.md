@@ -66,6 +66,7 @@ Android 的 `arm64-v8a` 与 `x86_64` 共用一套 NDK 构建配方。用 `llvm-r
 
 - [ ] 在 GitHub Actions 的 macOS Intel、macOS ARM64、Linux ARM64 和 Windows ARM64 runner 上，分别对 Forge、Fabric 和 NeoForge 的实际安装 JAR 执行 Skija CPU 绘制及 Yoga 布局探针。Forge 使用 Java 17，Fabric 和 NeoForge 使用 Java 21。macOS 和 Linux 各验空缓存下载及离线重启，Windows ARM64 验 JAR 内置库。
 - [ ] Linux x64 和 Windows x64 的游戏内验证在本地进行。其他桌面环境的 CI 结果只记录原生库验证，游戏内验证单独记录。
+- CI 探针提供与实际 JVM 架构匹配的 LWJGL core 和原生库。Linux ARM64 游戏启动也需要启动器提供对应架构的 LWJGL。
 - [ ] OSS 开通后，用 Android 启动器实际使用的 JVM 确认自动识别 Android 及 JVM 架构，然后用空缓存下载对应 ZIP 并核对 SHA-256。记录启动器、JRE、ABI 和下载结果。Android 本轮验收止于识别和下载校验。
 - [ ] 调整 `ui/build.gradle`、`runtime/build.gradle` 和 `gradle/render-adapter.gradle` 中的测试原生依赖，使测试可按宿主运行，但安装 JAR 仍由 `gradle/atomlib-dependencies.gradle` 保持 Windows 内置范围。在已支持的架构运行 `./gradlew :core:test :runtime:test :ui:test :frontend-checker:test` 和目标平台的 `hiddenGlTest`。Windows 可用 `gradlew.bat` 与现有测试字体参数，Linux 隐藏窗口用 Xvfb/Mesa。发布流水线实际从每个公开源下载或导入生成好的原生包，匹配同一摘要，再发布宣称支持的范围。
 

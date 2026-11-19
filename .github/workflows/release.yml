@@ -24,15 +24,15 @@ jobs:
         with: { distribution: temurin, java-version: "21" }
       - name: Build platform jars
         env:
-          JAVA17_HOME: ${{ steps.java17.outputs.java-home }}
-          JAVA21_HOME: ${{ steps.java21.outputs.java-home }}
+          JAVA17_HOME: ${{ steps.java17.outputs.path }}
+          JAVA21_HOME: ${{ steps.java21.outputs.path }}
         run: python tools/run_packaging.py platforms --jobs 1
       - name: Verify jars
         run: python tools/run_packaging.py verify
       - name: Build consumers
         env:
-          JAVA17_HOME: ${{ steps.java17.outputs.java-home }}
-          JAVA21_HOME: ${{ steps.java21.outputs.java-home }}
+          JAVA17_HOME: ${{ steps.java17.outputs.path }}
+          JAVA21_HOME: ${{ steps.java21.outputs.path }}
         run: python tools/run_packaging.py consumers --jobs 1
       - name: Collect jars
         shell: pwsh

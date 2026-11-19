@@ -14,14 +14,9 @@ import com.atom.lib.natives.ClientNatives;
 import io.github.humbleui.skija.Bitmap;
 import io.github.humbleui.skija.ImageInfo;
 import io.github.humbleui.skija.Surface;
-import org.lwjgl.system.Configuration;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public final class PackagedNativeProbe {
     public static void main(String[] args) throws Exception {
@@ -38,13 +33,16 @@ public final class PackagedNativeProbe {
         ClientNatives.start(game, YogaNatives::hasConfiguredNative, YogaNatives::usePreparedNative,
                 YogaNatives::initializePreparedNative);
         NativePreparation.Status status = awaitPreparation();
+        if (args[3].equals("cold-offline")) {
+            if (!platform.equals(status.platform()) || status.state() != NativePreparation.State.FAILED
+                    || !status.detail().startsWith("Native cache missing or damaged.")) {
+                throw new AssertionError("Expected an offline cache miss for " + platform, status.failure());
+            }
+            System.out.println("PASS " + platform + " empty cache in offline mode");
+            return;
+        }
         if (!platform.equals(status.platform()) || status.state() != NativePreparation.State.AVAILABLE) {
             throw new AssertionError("Expected available " + platform + ", got " + status, status.failure());
-        }
-        if (!platform.startsWith("windows-")) {
-            Path cache = game.resolve("atomlib/natives").resolve(platform);
-            requireCached(cache, System.getProperty("skija.library.path"), System.mapLibraryName("skija"));
-            requireCached(cache, Configuration.LIBRARY_PATH.get(), System.mapLibraryName("lwjgl_yoga"));
         }
 
         try (var runtime = AtomLibRuntime.open("packaged-native-probe")) {
@@ -65,14 +63,6 @@ public final class PackagedNativeProbe {
             Thread.sleep(40);
         }
         return status;
-    }
-
-    private static void requireCached(Path cache, String paths, String library) {
-        if (paths == null || Arrays.stream(paths.split(Pattern.quote(File.pathSeparator)))
-                .map(Path::of).map(path -> path.toAbsolutePath().normalize())
-                .noneMatch(path -> path.startsWith(cache) && Files.isRegularFile(path.resolve(library)))) {
-            throw new AssertionError("Expected " + library + " from " + cache + ", got " + paths);
-        }
     }
 
     private static void probeRaster() {
