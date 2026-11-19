@@ -1,11 +1,12 @@
+apply from: '../gradle/test-natives.gradle'
+apply from: '../gradle/native-manifest.gradle'
+
 dependencies {
     api project(':core')
     api "io.github.humbleui:skija-shared:${rootProject.dependencyVersions.skija}"
     api "io.github.humbleui:types:${rootProject.dependencyVersions.types}"
     implementation "com.ibm.icu:icu4j:${rootProject.dependencyVersions.icu4j}"
-    def os = System.getProperty('os.name').toLowerCase().startsWith('windows') ? 'windows' : 'linux'
-    def arch = System.getProperty('os.arch') in ['aarch64', 'arm64'] ? 'arm64' : 'x64'
-    testRuntimeOnly "io.github.humbleui:skija-${os}-${arch}:${rootProject.dependencyVersions.skija}"
+    if (atomlibTestNatives) testRuntimeOnly "io.github.humbleui:${atomlibTestNatives.skija}:${rootProject.dependencyVersions.skija}"
 }
 
 tasks.register('imageDownsamplerBenchmark', JavaExec) {

@@ -1,5 +1,15 @@
 # Release Notes
 
+## v0.7.0
+
+- macOS 与 Linux 客户端首次启动会在后台准备原生库，缓存可离线复用。
+- 下载失败时，从主菜单打开 **AtomLib 原生库** 重试，或导入对应系统和架构的离线 ZIP。
+
+----
+
+- On macOS and Linux, the first client start prepares native libraries in the background and caches them for offline use.
+- If the download fails, open **AtomLib native libraries** from the title screen to retry or import the ZIP for your OS and architecture.
+
 ## v0.6.0
 
 **新增**

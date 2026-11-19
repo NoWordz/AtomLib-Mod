@@ -2,7 +2,7 @@ name: AtomLib build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "codex/v070-cross-platform-natives"]
     paths-ignore: ["docs/**", "**.md"]
   pull_request:
     paths-ignore: ["docs/**", "**.md"]
@@ -12,9 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  # Only the pure-Java contract module and the Python verifiers are
-  # platform-neutral. ui hardcodes Windows Yoga + Skija natives (the shipped
-  # platform set), so its tests live in the Windows job below.
   source:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -27,6 +24,11 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :core:test :frontend-checker:test --no-daemon --console=plain
+      - name: Linux native source tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          ./gradlew :runtime:test :ui:test -PatomlibTestFont=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc --no-daemon --console=plain
       - name: Verifier self-tests
         run: |
           python3 tools/test_verify_artifacts.py
@@ -34,10 +36,7 @@ jobs:
           python3 tools/verify_ui_examples.py
 
   source-native:
-    # ui testRuntimeOnly pins natives-windows and skija-windows-x64; runtime
-    # selects the native by host OS. A Linux runner therefore cannot load the
-    # Yoga/Skija natives at all, so the full source suite runs on the Windows
-    # host the library is actually validated on.
+    # Windows remains the reference for the approved pixel baselines.
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -176,5 +175,58 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: atomlib-platform-jars
-          path: platforms/*/build/libs/*.jar
+          path: platforms/*/build/libs/atomlib-*-v*.jar
           if-no-files-found: error
+
+  desktop-natives:
+    name: Desktop natives (${{ matrix.platform }})
+    needs: package
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-x64
+            runner: macos-15-intel
+            architecture: x64
+            distribution: temurin
+            python: python3
+          - platform: macos-arm64
+            runner: macos-15
+            architecture: aarch64
+            distribution: temurin
+            python: python3
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            architecture: aarch64
+            distribution: temurin
+            python: python3
+          - platform: windows-arm64
+            runner: windows-11-arm
+            architecture: aarch64
+            distribution: microsoft
+            python: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: atomlib-platform-jars
+          path: build/desktop-native-jars
+      - id: java17
+        uses: actions/setup-java@v6
+        with:
+          distribution: ${{ matrix.distribution }}
+          architecture: ${{ matrix.architecture }}
+          java-version: '17'
+      - id: java21
+        uses: actions/setup-java@v6
+        with:
+          distribution: ${{ matrix.distribution }}
+          architecture: ${{ matrix.architecture }}
+          java-version: '21'
+      - name: Probe Forge, Fabric and NeoForge installation jars
+        env:
+          JAVA17_HOME: ${{ steps.java17.outputs.java-home }}
+          JAVA21_HOME: ${{ steps.java21.outputs.java-home }}
+        run: ${{ matrix.python }} tools/probe_desktop_natives.py build/desktop-native-jars ${{ matrix.platform }}

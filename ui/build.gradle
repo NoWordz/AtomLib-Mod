@@ -6,6 +6,7 @@
 // player's window-resize path). Independent platform builds set atomlibTarget
 // (gradle/atomlib-dependencies.gradle); the root build tests against 3.3.1,
 // the version pinned for 1.20.1-forge.
+apply from: '../gradle/test-natives.gradle'
 def yogaVersion = rootProject.ext.has('atomlibTarget') ? rootProject.ext.atomlibTarget.yoga : '3.3.1'
 def generateYogaDirty = tasks.register('generateYogaDirty') {
     def bridgeDir = layout.buildDirectory.dir('generated/yoga-dirty')
@@ -52,9 +53,11 @@ dependencies {
     compileOnly "org.lwjgl:lwjgl-yoga:${yogaVersion}"
     testImplementation "org.lwjgl:lwjgl:${yogaVersion}"
     testImplementation "org.lwjgl:lwjgl-yoga:${yogaVersion}"
-    testRuntimeOnly "org.lwjgl:lwjgl:${yogaVersion}:natives-windows"
-    testRuntimeOnly "org.lwjgl:lwjgl-yoga:${yogaVersion}:natives-windows"
-    testRuntimeOnly "io.github.humbleui:skija-windows-x64:${rootProject.dependencyVersions.skija}"
+    if (atomlibTestNatives) {
+        testRuntimeOnly "org.lwjgl:lwjgl:${yogaVersion}:${atomlibTestNatives.lwjgl}"
+        testRuntimeOnly "org.lwjgl:lwjgl-yoga:${yogaVersion}:${atomlibTestNatives.lwjgl}"
+        testRuntimeOnly "io.github.humbleui:${atomlibTestNatives.skija}:${rootProject.dependencyVersions.skija}"
+    }
 }
 sourceSets.main.java.srcDir(generateYogaDirty)
 tasks.named('compileJava') { dependsOn generateYogaDirty }

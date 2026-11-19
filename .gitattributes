@@ -4,3 +4,5 @@
 platforms/shared/src/main/resources/assets/** -text
 # Command logs are raw evidence; retain their original line endings.
 docs/evidence/**/*.log.txt -text
+# This recipe runs under Linux Bash, including from Windows checkouts in WSL.
+tools/build_android_yoga.sh text eol=lf

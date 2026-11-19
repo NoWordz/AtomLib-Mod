@@ -28,7 +28,13 @@ AtomLib is a client-side UI library for Minecraft mods. It combines [Skija](http
 | 1.21.1 | Fabric Loader 0.16.9 | 21 | Windows x64, ARM64 |
 | 1.21.1 | NeoForge 21.1.235 | 21 | Windows x64, ARM64 |
 
-These are build baselines, not a promise of validation on every loader, renderer or device. Windows ARM64 natives are packaged but have not been validated in-game. Linux and macOS client natives are not bundled. AtomLib is a client dependency; dedicated servers do not need to initialize its rendering runtime.
+The table lists the natives bundled in each JAR. Windows ARM64 is pending in-game validation. Dedicated servers skip native preparation.
+
+On macOS and glibc Linux, AtomLib selects x64 or ARM64 based on the running JVM and downloads the matching Skija and Yoga artifacts in the background. A cold cache tries the Aliyun Maven mirror first, then Maven Central. Later starts verify and reuse the files under `<game directory>/atomlib/natives/` without making a download request.
+
+If preparation fails, open **AtomLib native libraries** from the Minecraft title screen to retry or import the matching `atomlib-natives-0.7.0-<os>-<arch>.zip`. Import the ZIP as-is. To select a source, use `-Datomlib.natives.source=mirror`, `central`, or `offline`. The default is `auto`. Windows uses the bundled natives offline.
+
+Mods can poll `NativePreparation.status()` before making Skija or Yoga calls and use `NativePreparationScreen.whenReady(parent, factory)` to defer constructing a Minecraft screen until its natives are available. Android is experimental and requires separate launcher and rendering validation.
 
 ## Install
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.7.0
+
+**新增**
+
+- macOS 与 Linux 的 x64、ARM64 客户端可从阿里云 Maven 镜像或 Maven Central 准备对应的 Skija 和 Yoga。
+- 支持原生库校验缓存、离线 ZIP 导入、Minecraft 原版恢复界面及供宿主查询的准备状态。
+
+----
+
+**Added**
+
+- macOS and Linux x64 and ARM64 clients can prepare the matching Skija and Yoga from the Aliyun Maven mirror or Maven Central.
+- Added a verified native cache, offline ZIP import, a vanilla Minecraft recovery screen and preparation status for host mods.
+
 ## v0.6.0
 
 **新增**

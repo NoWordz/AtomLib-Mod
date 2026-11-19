@@ -5,13 +5,11 @@ ext.atomlibRenderAdapterApplied = true
 def renderVersions = new groovy.json.JsonSlurper().parse(file('../../versions/targets.json')).targets[project.name.replace('atomlib-', '')]
 if (renderVersions == null) throw new GradleException('render-adapter requires an AtomLib platform root')
 def renderLwjgl = renderVersions.yoga
-def renderOs = System.getProperty('os.name').toLowerCase(Locale.ROOT)
-def renderArch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
-def renderClassifier = renderOs.startsWith('windows') ? 'natives-windows' : renderOs.contains('mac') ? 'natives-macos' : 'natives-linux'
-if (renderArch in ['aarch64', 'arm64']) renderClassifier += '-arm64'
+apply from: '../../gradle/test-natives.gradle'
 sourceSets {
     main {
         java.srcDir '../shared/src/main/java'
+        if (renderVersions.loader != 'fabric') java.srcDir '../shared/src/mojmap/java'
         resources.srcDir '../shared/src/main/resources'
     }
     hiddenGlTest {
@@ -37,14 +35,12 @@ dependencies {
     ['lwjgl', 'lwjgl-opengl', 'lwjgl-glfw'].each { module ->
         compileOnly "org.lwjgl:${module}:${renderLwjgl}"
         hiddenGlTestImplementation "org.lwjgl:${module}:${renderLwjgl}"
-        hiddenGlTestRuntimeOnly "org.lwjgl:${module}:${renderLwjgl}:${renderClassifier}"
+        if (atomlibTestNatives) hiddenGlTestRuntimeOnly "org.lwjgl:${module}:${renderLwjgl}:${atomlibTestNatives.lwjgl}"
     }
-    // The shipped jar (:ui) pins windows natives regardless of host OS, so the
-    // hidden-window tests must pull their own host-matched Skija/Yoga natives.
-    hiddenGlTestRuntimeOnly "org.lwjgl:lwjgl-yoga:${renderLwjgl}:${renderClassifier}"
-    def skijaOs = renderOs.startsWith('windows') ? 'windows' : renderOs.contains('mac') ? 'macos' : 'linux'
-    def skijaArch = renderArch in ['aarch64', 'arm64'] ? 'arm64' : 'x64'
-    hiddenGlTestRuntimeOnly "io.github.humbleui:skija-${skijaOs}-${skijaArch}:${rootProject.dependencyVersions.skija}"
+    if (atomlibTestNatives) {
+        hiddenGlTestRuntimeOnly "org.lwjgl:lwjgl-yoga:${renderLwjgl}:${atomlibTestNatives.lwjgl}"
+        hiddenGlTestRuntimeOnly "io.github.humbleui:${atomlibTestNatives.skija}:${rootProject.dependencyVersions.skija}"
+    }
     hiddenGlTestImplementation platform("org.junit:junit-bom:${rootProject.dependencyVersions.junit}")
     hiddenGlTestImplementation 'org.junit.jupiter:junit-jupiter'
     hiddenGlTestImplementation 'org.joml:joml:1.10.5'

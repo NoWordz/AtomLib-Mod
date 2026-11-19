@@ -1,12 +1,17 @@
 package com.atom.lib.layout.internal;
 
+import com.atom.lib.natives.ClientNatives;
+
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
@@ -21,20 +26,57 @@ import java.util.zip.ZipInputStream;
  * already-initialized library path before the first Yoga call. When the
  * library is already reachable nothing is extracted.</p>
  */
-final class YogaNatives {
+public final class YogaNatives {
     private static boolean prepared;
 
     private YogaNatives() { }
 
     static synchronized void ensure() {
+        ClientNatives.requireAvailable();
         if (prepared) return;
-        prepared = true;
         try {
-            Path directory = extractNative();
-            if (directory != null) extendLibraryPath(directory);
-        } catch (Throwable ignored) {
+            if (!hasConfiguredNative()) {
+                Path directory = extractNative();
+                if (directory != null) extendLibraryPath(directory);
+            }
+        } catch (Exception ignored) {
             // Leave the diagnostics to LWJGL: it reports the missing library with
             // the platform it searched, which is more useful than a wrapped error.
+        }
+        prepared = true;
+    }
+
+    /** Preserves the host's explicitly supplied native libraries. */
+    public static boolean hasConfiguredNative() {
+        return containsLibrary(org.lwjgl.system.Configuration.LIBRARY_PATH.get())
+                || containsLibrary(System.getProperty("java.library.path"));
+    }
+
+    private static boolean containsLibrary(String paths) {
+        if (paths == null) return false;
+        String library = System.mapLibraryName("lwjgl_yoga");
+        return Arrays.stream(paths.split(Pattern.quote(File.pathSeparator)))
+                .filter(path -> !path.isEmpty()).anyMatch(path -> Files.isRegularFile(Path.of(path).resolve(library)));
+    }
+
+    /** Configures LWJGL before any caller initializes the Yoga JNI binding. */
+    public static void usePreparedNative(Path directory) {
+        if (!hasConfiguredNative()) extendLibraryPath(directory);
+    }
+
+    /** Confirms that the prepared binding can initialize and run a native call. */
+    public static void initializePreparedNative() {
+        org.lwjgl.util.yoga.Yoga.YGConfigFree(newConfig());
+    }
+
+    static long newConfig() {
+        try {
+            long config = org.lwjgl.util.yoga.Yoga.YGConfigNew();
+            if (config == 0) throw new IllegalStateException("Yoga could not allocate a configuration");
+            return config;
+        } catch (LinkageError failure) {
+            ClientNatives.reportLoadFailure(failure);
+            throw failure;
         }
     }
 
@@ -57,10 +99,15 @@ final class YogaNatives {
         Path directory = Path.of(System.getProperty("java.io.tmpdir"), "atomlib-natives", digest(library));
         Files.createDirectories(directory);
         Path target = directory.resolve(fileName);
-        if (!Files.isRegularFile(target) || Files.size(target) != library.length) {
+        if (!Files.isRegularFile(target) || Files.size(target) != library.length
+                || !MessageDigest.isEqual(Files.readAllBytes(target), library)) {
             Path temporary = Files.createTempFile(directory, fileName, ".tmp");
-            Files.write(temporary, library);
-            Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.write(temporary, library);
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
         }
         return directory;
     }
@@ -103,14 +150,12 @@ final class YogaNatives {
     static void extendLibraryPath(Path directory) {
         String current = org.lwjgl.system.Configuration.LIBRARY_PATH.get();
         String path = directory.toAbsolutePath().toString();
-        if (current != null && !current.isEmpty() && (current.equals(path) || current.startsWith(path + File.pathSeparator) || current.contains(File.pathSeparator + path))) return;
+        if (current != null && Arrays.asList(current.split(Pattern.quote(File.pathSeparator))).contains(path)) return;
         org.lwjgl.system.Configuration.LIBRARY_PATH.set(current == null || current.isEmpty() ? path : current + File.pathSeparator + path);
     }
 
     private static String digest(byte[] library) throws Exception {
         byte[] hash = MessageDigest.getInstance("SHA-256").digest(library);
-        StringBuilder text = new StringBuilder();
-        for (int i = 0; i < 8; i++) text.append(String.format(Locale.ROOT, "%02x", hash[i]));
-        return text.toString();
+        return HexFormat.of().formatHex(hash);
     }
 }

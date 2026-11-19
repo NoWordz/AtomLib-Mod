@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "release": "0.7.0",
+  "platforms": {
+    "linux-x64": {
+      "skija": {
+        "name": "skija-linux-x64-0.143.18.jar",
+        "version": "0.143.18",
+        "urls": [
+          "https://maven.aliyun.com/repository/central/io/github/humbleui/skija-linux-x64/0.143.18/skija-linux-x64-0.143.18.jar",
+          "https://repo.maven.apache.org/maven2/io/github/humbleui/skija-linux-x64/0.143.18/skija-linux-x64-0.143.18.jar"
+        ],
+        "size": 11726338,
+        "sha256": "5cd38df049594bf7bba7a82bad9caf1919f85404b5b12f074d7d7ba1961d7bfd",
+        "file": {
+          "path": "io/github/humbleui/skija/linux/x64/libskija.so",
+          "packPath": "skija/0.143.18/libskija.so",
+          "size": 28259768,
+          "sha256": "dd972f02b5289ec323a783113ba4c4770ab7fbe5c282af554a4cc0a48c4e67e9"
+        }
+      },
+      "yoga": {
+        "3.3.1": {
+          "name": "lwjgl-yoga-3.3.1-natives-linux.jar",
+          "version": "3.3.1",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-linux.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-linux.jar"
+          ],
+          "size": 42708,
+          "sha256": "af6ff4a0ce8e2282f1c803170c61537dbce1a65ab1235cc630c1702de75bf448",
+          "file": {
+            "path": "linux/x64/org/lwjgl/yoga/liblwjgl_yoga.so",
+            "packPath": "yoga/3.3.1/liblwjgl_yoga.so",
+            "size": 96536,
+            "sha256": "6306fd908901800b418b86eb0fea6a235c6cef8b185ee6997b073ad4eeedf00c"
+          }
+        },
+        "3.3.3": {
+          "name": "lwjgl-yoga-3.3.3-natives-linux.jar",
+          "version": "3.3.3",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-linux.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-linux.jar"
+          ],
+          "size": 60604,
+          "sha256": "6a8e611b34f32fcf2032dc210de5cac0d377314a5f9188900e958ce86590b16d",
+          "file": {
+            "path": "linux/x64/org/lwjgl/yoga/liblwjgl_yoga.so",
+            "packPath": "yoga/3.3.3/liblwjgl_yoga.so",
+            "size": 145968,
+            "sha256": "cf5b63b25d360a4446f023fb9b1e15b4dc54b6fdcd5effcf69ca70f73baf6b9b"
+          }
+        }
+      },
+      "bundle": {
+        "name": "atomlib-natives-0.7.0-linux-x64.zip",
+        "urls": [],
+        "size": 28521379,
+        "sha256": "a314b181f4f803f13568dcff889699e5caec83649faceb61e98442b6b8ceddbe"
+      }
+    },
+    "linux-arm64": {
+      "skija": {
+        "name": "skija-linux-arm64-0.143.18.jar",
+        "version": "0.143.18",
+        "urls": [
+          "https://maven.aliyun.com/repository/central/io/github/humbleui/skija-linux-arm64/0.143.18/skija-linux-arm64-0.143.18.jar",
+          "https://repo.maven.apache.org/maven2/io/github/humbleui/skija-linux-arm64/0.143.18/skija-linux-arm64-0.143.18.jar"
+        ],
+        "size": 11373876,
+        "sha256": "7b4686d30f477317bbf84af461b28a76b7783cbea2177d72f4b3f3e024fd81bd",
+        "file": {
+          "path": "io/github/humbleui/skija/linux/arm64/libskija.so",
+          "packPath": "skija/0.143.18/libskija.so",
+          "size": 27570024,
+          "sha256": "2627ea832d5ff234d2c6a71a95571ce56bc5ff8deece8f6a3bcd8f228c54e856"
+        }
+      },
+      "yoga": {
+        "3.3.1": {
+          "name": "lwjgl-yoga-3.3.1-natives-linux-arm64.jar",
+          "version": "3.3.1",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-linux-arm64.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-linux-arm64.jar"
+          ],
+          "size": 40755,
+          "sha256": "7fe2b900dea72a9de439cc10f35108fac33fbd20cef1bc86326cb7999194554f",
+          "file": {
+            "path": "linux/arm64/org/lwjgl/yoga/liblwjgl_yoga.so",
+            "packPath": "yoga/3.3.1/liblwjgl_yoga.so",
+            "size": 88280,
+            "sha256": "c05260d722d8c39cd5a3c009fb8f821836942bcc27fcddac74c8988f1f15e86e"
+          }
+        },
+        "3.3.3": {
+          "name": "lwjgl-yoga-3.3.3-natives-linux-arm64.jar",
+          "version": "3.3.3",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-linux-arm64.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-linux-arm64.jar"
+          ],
+          "size": 42071,
+          "sha256": "982bbef78eabbe2e1ae4fa82e9e4a857b12c6e91d75f121875ac704deb6d7931",
+          "file": {
+            "path": "linux/arm64/org/lwjgl/yoga/liblwjgl_yoga.so",
+            "packPath": "yoga/3.3.3/liblwjgl_yoga.so",
+            "size": 92384,
+            "sha256": "123e40ccc7c05c21c81afa6403c12f39a5690c929418ef80ca5e9f830a5a7e71"
+          }
+        }
+      },
+      "bundle": {
+        "name": "atomlib-natives-0.7.0-linux-arm64.zip",
+        "urls": [],
+        "size": 27769813,
+        "sha256": "190a8ececdefcc11a26df55b98134a9d31115bfb84607fe4be51d28d1f502a4a"
+      }
+    },
+    "macos-x64": {
+      "skija": {
+        "name": "skija-macos-x64-0.143.18.jar",
+        "version": "0.143.18",
+        "urls": [
+          "https://maven.aliyun.com/repository/central/io/github/humbleui/skija-macos-x64/0.143.18/skija-macos-x64-0.143.18.jar",
+          "https://repo.maven.apache.org/maven2/io/github/humbleui/skija-macos-x64/0.143.18/skija-macos-x64-0.143.18.jar"
+        ],
+        "size": 11255818,
+        "sha256": "60e45c13561867da7a57eb4d5f66ca7889e1a8cf915b94eb4bd328c3cd563c55",
+        "file": {
+          "path": "io/github/humbleui/skija/macos/x64/libskija.dylib",
+          "packPath": "skija/0.143.18/libskija.dylib",
+          "size": 27079080,
+          "sha256": "6ecae551c3918491ef6fe6132f725a6bb7d9873bbb006ff303cc2d0199b5dda9"
+        }
+      },
+      "yoga": {
+        "3.3.1": {
+          "name": "lwjgl-yoga-3.3.1-natives-macos.jar",
+          "version": "3.3.1",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-macos.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-macos.jar"
+          ],
+          "size": 51793,
+          "sha256": "bb45d12d88a02240d2daa3bc9987e6c4ded30661fa479a1880d6395919106d40",
+          "file": {
+            "path": "macos/x64/org/lwjgl/yoga/liblwjgl_yoga.dylib",
+            "packPath": "yoga/3.3.1/liblwjgl_yoga.dylib",
+            "size": 144832,
+            "sha256": "df231e098813a2e019cf35d33bc68054beb80ff148c09394419b290a9d4aa067"
+          }
+        },
+        "3.3.3": {
+          "name": "lwjgl-yoga-3.3.3-natives-macos.jar",
+          "version": "3.3.3",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-macos.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-macos.jar"
+          ],
+          "size": 54220,
+          "sha256": "bbf37b9768f7d091133ebd7a49c6722fde305f65810712fbd4098f44621b0fec",
+          "file": {
+            "path": "macos/x64/org/lwjgl/yoga/liblwjgl_yoga.dylib",
+            "packPath": "yoga/3.3.3/liblwjgl_yoga.dylib",
+            "size": 145752,
+            "sha256": "d7ae3490586633cf9aeedaa56798608e8aa16f57b31181cde140cd39a2f183e0"
+          }
+        }
+      },
+      "bundle": {
+        "name": "atomlib-natives-0.7.0-macos-x64.zip",
+        "urls": [],
+        "size": 27388789,
+        "sha256": "f149bbd9395f450b478399fa0672723211a2f5938527f09f7cf2b452c32a6b9f"
+      }
+    },
+    "macos-arm64": {
+      "skija": {
+        "name": "skija-macos-arm64-0.143.18.jar",
+        "version": "0.143.18",
+        "urls": [
+          "https://maven.aliyun.com/repository/central/io/github/humbleui/skija-macos-arm64/0.143.18/skija-macos-arm64-0.143.18.jar",
+          "https://repo.maven.apache.org/maven2/io/github/humbleui/skija-macos-arm64/0.143.18/skija-macos-arm64-0.143.18.jar"
+        ],
+        "size": 10718944,
+        "sha256": "196fde12e957bdc308010321511b671bfc167dbe3776bfc7c3749fc2965b05bd",
+        "file": {
+          "path": "io/github/humbleui/skija/macos/arm64/libskija.dylib",
+          "packPath": "skija/0.143.18/libskija.dylib",
+          "size": 25756912,
+          "sha256": "27f9ca173a4e9a9849d41a98a18804f7b2fe30b800981e56ad4673f766036ab5"
+        }
+      },
+      "yoga": {
+        "3.3.1": {
+          "name": "lwjgl-yoga-3.3.1-natives-macos-arm64.jar",
+          "version": "3.3.1",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-macos-arm64.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.1/lwjgl-yoga-3.3.1-natives-macos-arm64.jar"
+          ],
+          "size": 46731,
+          "sha256": "0bd8eef77e3a0f225cd438a6ea4d13279aad6e3e4c38cbc39aab757f3aab4f60",
+          "file": {
+            "path": "macos/arm64/org/lwjgl/yoga/liblwjgl_yoga.dylib",
+            "packPath": "yoga/3.3.1/liblwjgl_yoga.dylib",
+            "size": 145520,
+            "sha256": "3d0bf67fdd911efbbdf40ed66dc034d0f3e833a9008748fca0c8fc358d2dc3a3"
+          }
+        },
+        "3.3.3": {
+          "name": "lwjgl-yoga-3.3.3-natives-macos-arm64.jar",
+          "version": "3.3.3",
+          "urls": [
+            "https://maven.aliyun.com/repository/central/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-macos-arm64.jar",
+            "https://repo.maven.apache.org/maven2/org/lwjgl/lwjgl-yoga/3.3.3/lwjgl-yoga-3.3.3-natives-macos-arm64.jar"
+          ],
+          "size": 49080,
+          "sha256": "9dc54509e40a1e2715255cd3e5b8f50752c603a58a3c35a76fd2e7bc9191be63",
+          "file": {
+            "path": "macos/arm64/org/lwjgl/yoga/liblwjgl_yoga.dylib",
+            "packPath": "yoga/3.3.3/liblwjgl_yoga.dylib",
+            "size": 163056,
+            "sha256": "98125042c0518cd37ebc8168e642718e3e551ef5266339754987f10a320c227e"
+          }
+        }
+      },
+      "bundle": {
+        "name": "atomlib-natives-0.7.0-macos-arm64.zip",
+        "urls": [],
+        "size": 26084631,
+        "sha256": "eb41c6c89950f71db3dad2d51bcc0e486d12bbd76f635675e8d16c07c0908140"
+      }
+    }
+  }
+}

@@ -41,7 +41,8 @@ class TerraModalViewportReviewTest {
         assertEquals(InputResult.CONSUMED,f.pointer(PointerEvent.Type.RELEASE,x,y,0));
     }
 
-    @ParameterizedTest @CsvSource({"360,180","200,180"})
+    // The short case must force fitting even when the platform lays out a shorter paragraph.
+    @ParameterizedTest @CsvSource({"360,140","200,180"})
     void resizedConfirmationFitsAndPaintedButtonActuallyConfirms(int width,int height)throws Exception {
         try(var f=new ControlFixture();var shell=new SettingsShell(f.context)) {
             var tabs=tabs(f,shell);var results=new ArrayList<ConfirmationResult>();open(f,results);
@@ -91,10 +92,11 @@ class TerraModalViewportReviewTest {
     @Test void fittedDialogStillHasAFullViewportDismissOverlay() {
         try(var f=new ControlFixture();var shell=new SettingsShell(f.context)) {
             var tabs=tabs(f,shell);var results=new ArrayList<ConfirmationResult>();open(f,results);
-            var state=layout(f,shell,tabs,360,180);
-            assertEquals(new Rect(0,0,360,180),state.presentation().box(new NodeId("dialog/overlay")).border());
+            var state=layout(f,shell,tabs,360,140);
+            assertTrue(state.presentation().renderScale(DIALOG)<1);
+            assertEquals(new Rect(0,0,360,140),state.presentation().box(new NodeId("dialog/overlay")).border());
             assertEquals(1,state.presentation().renderScale(new NodeId("dialog/overlay")));
-            try(var surface=Surface.makeRasterN32Premul(360,180)){assertDoesNotThrow(()->paint(f,shell,state,surface));}
+            try(var surface=Surface.makeRasterN32Premul(360,140)){assertDoesNotThrow(()->paint(f,shell,state,surface));}
             click(f,1,1);
             assertEquals(List.of(ConfirmationResult.CANCELLED),results);
         }

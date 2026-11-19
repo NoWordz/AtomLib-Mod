@@ -28,7 +28,13 @@ AtomLib 是面向 Minecraft 模组的客户端 UI 库，组合了 [Skija](https:
 | 1.21.1 | Fabric Loader 0.16.9 | 21 | Windows x64、ARM64 |
 | 1.21.1 | NeoForge 21.1.235 | 21 | Windows x64、ARM64 |
 
-上表是构建基线，不代表所有加载器、渲染器与设备都已验证。Windows ARM64 原生依赖已打包，尚未游戏内验证；未附带 Linux、macOS 客户端原生依赖。AtomLib 是客户端依赖，专用服务器无需初始化其渲染运行时。
+上表列出每个 JAR 内置的原生库。Windows ARM64 尚待游戏内验证。专用服务器跳过原生库准备。
+
+macOS 和使用 glibc 的 Linux 客户端按 JVM 架构选择 x64 或 ARM64，在后台下载对应的 Skija 和 Yoga。冷缓存先尝试阿里云 Maven 镜像，失败后回退到 Maven Central。后续启动会直接核验并复用游戏目录下 `atomlib/natives/` 中的缓存。
+
+准备失败时，从 Minecraft 主菜单打开 **AtomLib 原生库** 重试，或直接导入对应的 `atomlib-natives-0.7.0-<os>-<arch>.zip`。可用 JVM 参数 `-Datomlib.natives.source=mirror`、`central` 或 `offline` 指定来源，默认为 `auto`。Windows 可离线使用内置原生库。
+
+模组可用 `NativePreparation.status()` 查询状态，在调用 Skija 或 Yoga 前确认已就绪。Minecraft 界面可用 `NativePreparationScreen.whenReady(parent, factory)` 延迟构造。Android 仍处于实验阶段，需单独验证启动器及渲染后端。
 
 ## 安装
 

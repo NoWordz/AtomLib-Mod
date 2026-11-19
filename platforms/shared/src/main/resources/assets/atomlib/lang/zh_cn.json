@@ -1,0 +1,10 @@
+{
+  "atomlib.natives.title": "AtomLib 原生库",
+  "atomlib.natives.waiting": "正在为 %s 准备原生库…",
+  "atomlib.natives.failed": "无法为 %s 准备原生库",
+  "atomlib.natives.restart": "原生库初始化失败，请解决原因后重启 Minecraft。",
+  "atomlib.natives.zip": "AtomLib 离线 ZIP 的文件路径",
+  "atomlib.natives.import": "导入 ZIP",
+  "atomlib.natives.retry": "重试",
+  "atomlib.natives.bad_path": "请输入有效的本地文件路径。"
+}

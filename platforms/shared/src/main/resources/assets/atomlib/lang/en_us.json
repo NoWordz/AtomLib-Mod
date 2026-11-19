@@ -1,0 +1,10 @@
+{
+  "atomlib.natives.title": "AtomLib native libraries",
+  "atomlib.natives.waiting": "Preparing native libraries for %s…",
+  "atomlib.natives.failed": "Could not prepare native libraries for %s",
+  "atomlib.natives.restart": "Native initialization failed. Restart Minecraft after fixing the cause.",
+  "atomlib.natives.zip": "Path to the AtomLib offline ZIP",
+  "atomlib.natives.import": "Import ZIP",
+  "atomlib.natives.retry": "Retry",
+  "atomlib.natives.bad_path": "Enter a valid local file path."
+}

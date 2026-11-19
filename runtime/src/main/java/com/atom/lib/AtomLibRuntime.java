@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.atom.lib;
 
+import com.atom.lib.natives.ClientNatives;
 import io.github.humbleui.skija.impl.Library;
 import java.util.UUID;
 
@@ -10,7 +11,13 @@ public final class AtomLibRuntime {
     public static RuntimeHandle open() { return open("host-" + UUID.randomUUID()); }
     public static RuntimeHandle open(String namespace) {
         if (namespace == null || namespace.isBlank()) throw new IllegalArgumentException("Empty namespace");
-        Library.load();
+        ClientNatives.requireAvailable();
+        try {
+            Library.load();
+        } catch (LinkageError failure) {
+            ClientNatives.reportLoadFailure(failure);
+            throw failure;
+        }
         return new RuntimeHandle(namespace);
     }
 }

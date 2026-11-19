@@ -23,6 +23,37 @@ SHIPPED_FONTS = {
 _SHADER_ROOT = Path(__file__).resolve().parents[1]/'platforms/shared/src/main/resources/assets/atomlib/shaders/backdrop'
 SHIPPED_SHADERS = {f'assets/atomlib/shaders/backdrop/{name}':(_SHADER_ROOT/name).read_bytes()
                    for name in ('fullscreen.vert','kawase.frag','composite.frag')}
+_NATIVE_LOCK = Path(__file__).resolve().parents[1] / 'versions/native-artifacts.json'
+
+
+def verify_native_manifest(jar, version, skija, yoga):
+    expected = json.loads(_NATIVE_LOCK.read_text(encoding='utf-8'))
+    if version != expected['release']:
+        return
+    prefix = 'META-INF/atomlib/native-artifacts'
+    if json.loads(jar.read(prefix + '.json')) != expected:
+        raise ValueError('packaged native manifest differs from the versioned lock')
+    index = dict(line.split('=', 1) for line in jar.read(prefix + '.properties').decode('ascii').splitlines())
+    if index.get('yogaVersion') != yoga:
+        raise ValueError(f'native index does not select Yoga {yoga}')
+    for platform, plan in expected['platforms'].items():
+        if plan['skija']['version'] != skija:
+            raise ValueError(f'native manifest selects a different Skija on {platform}')
+        if platform.startswith(('linux-', 'macos-')) and yoga not in plan['yoga']:
+            raise ValueError(f'native manifest lacks Yoga {yoga} for {platform}')
+        artifacts = {'skija': plan['skija'], **{f'yoga.{key}': val for key, val in plan['yoga'].items()}}
+        for name, artifact in artifacts.items():
+            fields = {field: artifact[field] for field in ('size', 'sha256') if field in artifact}
+            fields.update(urls=','.join(artifact['urls']))
+            fields.update({field: artifact['file'][field] for field in ('path', 'packPath')})
+            fields.update({f'file.{field}': artifact['file'][field] for field in ('size', 'sha256')})
+            if any(index.get(f'{platform}.{name}.{field}') != str(value) for field, value in fields.items()):
+                raise ValueError(f'native index differs from the lock for {platform}.{name}')
+        bundle = plan['bundle']
+        bundle_fields = dict(size=bundle['size'], sha256=bundle['sha256'], urls=','.join(bundle['urls']),
+                             entries=','.join(f'{platform}.{name}' for name in artifacts))
+        if any(index.get(f'{platform}.bundle.{field}') != str(value) for field, value in bundle_fields.items()):
+            raise ValueError(f'native bundle index differs from the lock for {platform}')
 
 
 def module_name(data):
@@ -169,6 +200,10 @@ def verify_artifact(path, *, loader, version='0.1.0-beta', skija='0.143.18', typ
                 return
             if consumer:
                 return
+            try:
+                verify_native_manifest(z, version, skija, yoga)
+            except (KeyError, TypeError, ValueError) as exc:
+                error(f'missing/invalid native manifest: {exc}')
             for name in SHIPPED_FONTS:
                 if entries[name] != 1:
                     error(f'missing or duplicate default font: {name}')

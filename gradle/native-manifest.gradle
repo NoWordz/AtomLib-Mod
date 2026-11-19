@@ -1,0 +1,35 @@
+// The JSON lock also drives the offline packager. Generate a JDK-only runtime index.
+def nativeLock = file('../versions/native-artifacts.json')
+def targetYoga = rootProject.ext.has('atomlibTarget') ? rootProject.ext.atomlibTarget.yoga :
+        new groovy.json.JsonSlurper().parse(file('../versions/targets.json')).targets['1.20.1-forge'].yoga
+tasks.named('processResources') {
+    inputs.file(nativeLock)
+    inputs.property('nativeYogaVersion', targetYoga)
+    from(nativeLock) { into 'META-INF/atomlib' }
+    doLast {
+        def spec = new groovy.json.JsonSlurper().parse(nativeLock)
+        if (spec.schemaVersion != 1) throw new GradleException('Unsupported native lock schema')
+        def index = ["yogaVersion=${targetYoga}"]
+        spec.platforms.each { platform, plan ->
+            def keys = []
+            def writeArtifact = { key, item ->
+                keys.add(key)
+                ['size', 'sha256'].each { field ->
+                    if (item[field] != null) index.add("${key}.${field}=${item[field]}")
+                }
+                index.add("${key}.urls=${item.urls.join(',')}")
+                index.add("${key}.path=${item.file.path}")
+                index.add("${key}.packPath=${item.file.packPath}")
+                index.add("${key}.file.size=${item.file.size}")
+                index.add("${key}.file.sha256=${item.file.sha256}")
+            }
+            writeArtifact("${platform}.skija", plan.skija)
+            plan.yoga.each { version, item -> writeArtifact("${platform}.yoga.${version}", item) }
+            index.add("${platform}.bundle.entries=${keys.join(',')}")
+            index.add("${platform}.bundle.size=${plan.bundle.size}")
+            index.add("${platform}.bundle.sha256=${plan.bundle.sha256}")
+            index.add("${platform}.bundle.urls=${plan.bundle.urls.join(',')}")
+        }
+        new File(destinationDir, 'META-INF/atomlib/native-artifacts.properties').setText(index.join('\n') + '\n', 'UTF-8')
+    }
+}

@@ -10,8 +10,11 @@ import static org.lwjgl.util.yoga.Yoga.*;
 public final class YogaLayoutEngine implements LayoutEngine {
     public enum Precision { DEVICE_PIXELS,FRACTIONAL }
     public YogaLayoutEngine(){this(Precision.DEVICE_PIXELS);}
-    public YogaLayoutEngine(Precision precision){this.precision=Objects.requireNonNull(precision);config=YGConfigNew();}
-    static { YogaNatives.ensure(); }
+    public YogaLayoutEngine(Precision precision){
+        this.precision=Objects.requireNonNull(precision);
+        YogaNatives.ensure();
+        config=YogaNatives.newConfig();
+    }
     private final Thread thread=Thread.currentThread();
     private final long config;
     private final Precision precision;
