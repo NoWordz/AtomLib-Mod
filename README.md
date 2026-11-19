@@ -8,7 +8,7 @@
 
 AtomLib is a client-side UI library for Minecraft mods. It combines [Skija](https://github.com/HumbleUI/Skija) drawing, [Yoga](https://www.yogalayout.dev/) layout and Minecraft rendering adapters. Your mod owns its screens, business data and lifecycle.
 
-**v0.6.0** · [Downloads](https://github.com/NoWordz/AtomLib-Mod/releases) · [Getting started](docs/wiki/getting-started.md) · [API guides](docs/wiki/English.md) · [Release notes](RELEASE_NOTES.md)
+**v0.7.0** · [Downloads](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0) · [Getting started](docs/wiki/getting-started.md) · [API guides](docs/wiki/English.md) · [Release notes](RELEASE_NOTES.md)
 
 ## Features
 
@@ -40,7 +40,7 @@ Mods can poll `NativePreparation.status()` before making Skija or Yoga calls and
 
 Download the JAR matching your Minecraft version and loader from [Releases](https://github.com/NoWordz/AtomLib-Mod/releases), then place it in `mods/` alongside a compatible consuming mod. A dependency version range alone does not establish API compatibility.
 
-For mod development, extract `atomlib-input-0.6.0.zip` as a local Maven repository. Coordinates and loader-specific dependency syntax are in [Getting started](docs/wiki/getting-started.md).
+For mod development, extract `atomlib-input-0.7.0.zip` as a local Maven repository. Coordinates and loader-specific dependency syntax are in [Getting started](docs/wiki/getting-started.md).
 
 ## Start a screen
 

@@ -2,13 +2,19 @@
 
 ## v0.7.0
 
-- macOS 与 Linux 客户端首次启动会在后台准备原生库，缓存可离线复用。
+- macOS 与 glibc Linux 客户端首次启动会在后台下载当前 JVM 架构对应的原生库，支持 x64 和 ARM64，缓存可离线复用。
 - 下载失败时，从主菜单打开 **AtomLib 原生库** 重试，或导入对应系统和架构的离线 ZIP。
+- Windows x64 和 ARM64 继续使用 JAR 内置原生库。
+- 请选择 Minecraft 1.20.1 Forge 或 1.21.1 Fabric、NeoForge 对应的安装 JAR。Maven ZIP 供模组开发使用。
+- 本次发布覆盖桌面端，Android 自动下载仍在开发中。
 
 ----
 
-- On macOS and Linux, the first client start prepares native libraries in the background and caches them for offline use.
+- On macOS and glibc Linux, the first client start downloads the native libraries for the running x64 or ARM64 JVM in the background and caches them for offline use.
 - If the download fails, open **AtomLib native libraries** from the title screen to retry or import the ZIP for your OS and architecture.
+- Windows x64 and ARM64 continue to use the native libraries bundled in the JAR.
+- Install the JAR for Minecraft 1.20.1 Forge or 1.21.1 Fabric or NeoForge. The Maven ZIP is for mod developers.
+- This release covers desktop clients. Automatic downloads on Android are still in development.
 
 ## v0.6.0
 

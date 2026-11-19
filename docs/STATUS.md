@@ -1,8 +1,19 @@
 # AtomLib status
 
-**0.6.0 已通过 NeoForge 配对实机验收。** · [Releases](https://github.com/NoWordz/AtomLib-Mod/releases) · [Integration guide](wiki/sessions.md)
+**当前桌面发行版为 0.7.0。** [GitHub Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0) · [接入文档](wiki/sessions.md)
 
-2026-11-19，用户确认「心自安然」中历史设置、服务端托管、反馈音和 Module Shop 共存时的主题隔离均正常。三端 Windows 本地干净检出各通过 140 个零容差场景和全量测试。 [验收记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-19-windows-分发检查与-neoforge-候选部署)
+## 0.7.0 交付状态
+
+- Windows x64 和 ARM64 使用内置原生库。macOS 和 glibc Linux 的 x64 与 ARM64 客户端按 JVM 架构在后台下载 Skija 和 Yoga，校验后支持缓存复用和离线 ZIP 导入。
+- 发行附件包括 Forge 1.20.1、Fabric 和 NeoForge 1.21.1 三份安装 JAR、四份桌面离线 ZIP、七模块 Maven ZIP 和校验文件。发行来自 `codex/v070-cross-platform-natives`。
+- 2026-11-19 的 CI 在 macOS x64、macOS ARM64、Linux ARM64 和 Windows ARM64 验过三份安装 JAR 的原生库，整轮 12 项通过。覆盖原生加载、Skija 回读和 Yoga 布局。 [Actions](https://github.com/NoWordz/AtomLib-Mod/actions/runs/44515980874)
+- WSL Prism 的 Linux x64 Fabric 实例已验证空缓存后台下载、两份原生库的 SHA-256，以及 AtomChat 测试包进存档后的界面和交互。偶发闪烁暂未复现定位。Windows x64 完成原生探针和隐藏窗口 OpenGL 验证，完整游戏验收未记录。
+- Android 的两个 ABI 离线候选已归档。OSS 开通后，验收范围为启动器 JVM 下的操作系统及 ABI 识别、正确 ZIP 的自动下载和 SHA-256 校验。
+- AtomChat 0.9.1 三端配套已完成本地编译和候选输入校验，Fabric 测试包已在 WSL 运行。正式配对制品待重新审定前端契约。 [实施方案](superpowers/plans/2026-11-19-v070-cross-platform-natives.md)
+
+## 0.6.0 交付状态
+
+0.6.0 于 2026-11-19 发布。同日用户在 NeoForge「心自安然」确认历史设置、服务端托管、反馈音和 Module Shop 共存时的主题隔离均正常。三端 Windows 本地干净检出各通过 140 个零容差场景和全量测试。 [GitHub Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.6.0) · [验收记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-19-windows-分发检查与-neoforge-候选部署)
 
 ## 0.6.0 续作
 

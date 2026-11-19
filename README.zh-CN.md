@@ -8,7 +8,7 @@
 
 AtomLib 是面向 Minecraft 模组的客户端 UI 库，组合了 [Skija](https://github.com/HumbleUI/Skija) 绘制、[Yoga](https://www.yogalayout.dev/) 布局与 Minecraft 渲染适配。页面、业务数据和生命周期仍由宿主模组管理。
 
-**v0.6.0** · [下载](https://github.com/NoWordz/AtomLib-Mod/releases) · [开始接入](docs/wiki/getting-started.md) · [使用文档](docs/wiki/Home.md) · [更新说明](RELEASE_NOTES.md)
+**v0.7.0** · [下载](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0) · [开始接入](docs/wiki/getting-started.md) · [使用文档](docs/wiki/Home.md) · [更新说明](RELEASE_NOTES.md)
 
 ## 主要能力
 
@@ -40,7 +40,7 @@ macOS 和使用 glibc 的 Linux 客户端按 JVM 架构选择 x64 或 ARM64，�
 
 从 [Releases](https://github.com/NoWordz/AtomLib-Mod/releases) 下载匹配 Minecraft 版本与加载器的 JAR，与兼容的宿主模组一起放入 `mods/`。依赖版本范围符合要求，不等于 API 必然兼容。
 
-模组开发者可将发行附件 `atomlib-input-0.6.0.zip` 解压为本地 Maven 仓库。坐标与各加载器的依赖写法见[开始接入](docs/wiki/getting-started.md)。
+模组开发者可将发行附件 `atomlib-input-0.7.0.zip` 解压为本地 Maven 仓库。坐标与各加载器的依赖写法见[开始接入](docs/wiki/getting-started.md)。
 
 ## 接入一个界面
 
