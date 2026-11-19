@@ -17,7 +17,9 @@ def main():
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     version = next(line.split("=", 1)[1] for line in (root / "gradle.properties").read_text().splitlines() if line.startswith("atomlib_version="))
-    output = Path(tempfile.mkdtemp(prefix=time.strftime(f"consumer-%Y%m%d-%H%M%S-jdk{args.language_level}-"), dir=root / "build/frontend-contract-lock"))
+    evidence_root = root / "build/frontend-contract-lock"
+    evidence_root.mkdir(parents=True, exist_ok=True)
+    output = Path(tempfile.mkdtemp(prefix=time.strftime(f"consumer-%Y%m%d-%H%M%S-jdk{args.language_level}-"), dir=evidence_root))
     consumer, reviewed = output / "consumer", output / "reviewed-fixture"
     consumer.mkdir(parents=True)
     reviewed.mkdir()
