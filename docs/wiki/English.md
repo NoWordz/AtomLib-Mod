@@ -2,7 +2,7 @@
 
 AtomLib combines Skija rendering, Yoga layout and optional controls for Minecraft client mods. The host owns its screen, business state and lifecycle.
 
-**Version: 0.5.0** · [Releases](https://github.com/NoWordz/AtomLib-Mod/releases) · [Issues](https://github.com/NoWordz/AtomLib-Mod/issues) · [中文](Home.md)
+[Releases](https://github.com/NoWordz/AtomLib-Mod/releases) · [Issues](https://github.com/NoWordz/AtomLib-Mod/issues) · [中文](Home.md)
 
 | I want to… | Read |
 | --- | --- |
@@ -15,4 +15,4 @@ AtomLib combines Skija rendering, Yoga layout and optional controls for Minecraf
 | Integrate blur or vanilla item icons | [Backdrop](backdrop.md) · [Item icons](item-icons.md) |
 | Build and troubleshoot | [Development](development.md) |
 
-Some detailed guides are currently in Chinese. Published builds are listed on Releases; Windows x64 and ARM64 natives are packaged, with ARM64 in-game validation still pending. Linux/macOS client natives are not bundled.
+See the [installation overview](../../README.md#install) for desktop native libraries. Some detailed guides are available in Chinese.

@@ -20,7 +20,7 @@ The packaging command builds the three platform distributions, publishes their m
 ## Publish to GitHub Releases
 
 1. Check the current diff, HEAD and remote branch. Include only intended source, tests and maintained documentation; keep temporary plans, logs and review snapshots outside the commit.
-2. Keep `gradle.properties`, bilingual `CHANGELOG.md`, `RELEASE_NOTES.md`, README files and target metadata consistent. Extract the complete matching version section from `RELEASE_NOTES.md` into a temporary notes file, preserving both languages.
+2. Keep `gradle.properties`, bilingual `CHANGELOG.md`, `RELEASE_NOTES.md` and target metadata consistent. Keep README download links version-independent. Extract the matching bilingual section from `RELEASE_NOTES.md` into a temporary notes file.
 3. Reuse valid verification only when the relevant source, dependencies, configuration and target are unchanged. Recheck current artifacts and required CI. Record game, hardware or compatibility coverage separately from offline checks; the release notes must not imply unperformed in-game validation.
 4. Commit the reviewed state, push the intended branch, and create/push the matching annotated tag. Verify that the remote tag resolves to that commit before creating the release with `gh release create --verify-tag`.
 5. Attach the Forge, Fabric and NeoForge installation JARs, the matching `atomlib-input-VERSION.zip`, and its `.sha256` file. The Maven archive is for developers and must not be presented as an installation mod.

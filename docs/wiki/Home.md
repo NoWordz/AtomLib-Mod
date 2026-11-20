@@ -2,7 +2,7 @@
 
 AtomLib 为 Minecraft 模组宿主提供 Skija 绘制、Yoga 布局和可选控件。宿主仍负责自己的页面、业务状态和生命周期。
 
-**版本：0.5.0** · [公开下载](https://github.com/NoWordz/AtomLib-Mod/releases) · [问题反馈](https://github.com/NoWordz/AtomLib-Mod/issues) · [English](English.md)
+[公开下载](https://github.com/NoWordz/AtomLib-Mod/releases) · [问题反馈](https://github.com/NoWordz/AtomLib-Mod/issues) · [English](English.md)
 
 ## 你想做什么？
 
@@ -19,6 +19,6 @@ AtomLib 为 Minecraft 模组宿主提供 Skija 绘制、Yoga 布局和可选控�
 
 ## 三条先知道
 
-1. 本文说明 0.5.0 的接口与使用边界，安装时选择对应 Minecraft 版本与加载器的 JAR。
-2. 当前客户端包内置 Windows x64 和 ARM64 原生依赖；ARM64 尚未游戏内验证，Linux 和 macOS 未打包。
-3. 这是界面底层与可选控件，不是完整聊天、富文本或 IME 框架。宿主仍要转发输入并按合同管理资源。
+安装时选择与 Minecraft 版本和加载器匹配的 JAR。各桌面平台的原生库准备方式见[安装说明](../../README.zh-CN.md#安装)。
+
+宿主负责转发输入并管理资源生命周期。

@@ -17,8 +17,21 @@ dependencies {
 }
 ```
 
-Open the runtime only from client code. Register a font supplied by the host
-for priority, and call `registerDefaults()` so text renders CJK out of the box
+## Client natives
+
+Open the runtime from client code after `NativePreparation.status().state()`
+reports `AVAILABLE`. Use `NativePreparationScreen.whenReady(parent, factory)`
+to defer creating a screen until Skija and Yoga are ready.
+
+On macOS and Linux, set the JVM property `atomlib.natives.source` to `mirror`,
+`central` or `offline` to override the default `auto` mode. In offline mode
+with an empty cache, import the matching release ZIP as-is from **AtomLib
+native libraries** in the title screen.
+
+## Runtime and rendering
+
+Register a font supplied by the host for priority, and call `registerDefaults()`
+so text renders CJK out of the box
 through the bundled subsetted Noto Sans SC (GB2312-complete hanzi, kana,
 Latin-1 supplement, punctuation and kaomoji symbols; emoji, Hangul words and
 GBK extensions are intentionally excluded). Host fonts win: the bundled faces
