@@ -6,7 +6,7 @@ package com.atom.lib.design.atomchat;
  */
 public final class UiTokens {
     /** Global multiplier — bump this to scale the whole UI. */
-    public static final float SCALE = 1.25F;
+    public static final float SCALE = com.atom.lib.design.ControlTokens.SCALE;
 
     /** Panel bezel width, shared by its stroke, background inset and blur capture. */
     public static final float PANEL_BEZEL_WIDTH = s(2);
@@ -28,7 +28,7 @@ public final class UiTokens {
     public static final float CHAT_EFFECT_EMOJI_SIZE = s(CHAT_EFFECT_EMOJI_BASE_SIZE);
 
     public static float s(float v) {
-        return v * SCALE;
+        return com.atom.lib.design.ControlTokens.scale(v);
     }
 
     /**
@@ -71,9 +71,9 @@ public final class UiTokens {
      * Radius multiplier for a configured corner radius. The knob is in
      * 1080p-basis pixels (it scales with the UI density, not pinned to
      * physical pixels): {@code factor = cornerRadius / 20}, so the {@code 20}
-     * default is factor 1 and {@code 0} is square (factor 0 everywhere). The
-     * product clamps to the shipped 0..1.25 span, which is also where the
-     * slider maximum {@code s(20)} lands at the default scale.
+     * default is factor 1 and {@code 0} is square (factor 0 everywhere).
+     * The host owns its setting range. Negative and non-finite inputs are square;
+     * individual controls fit their corners to their drawable bounds.
      *
      * <p>The denominator was {@code 28} while the knob was on the reference-px
      * scale; a config file from that era is rescaled once on load, so its
@@ -81,7 +81,7 @@ public final class UiTokens {
      * {@code AtomChatConfig#migratePixelRadius()}).</p>
      */
     public static float radiusFactor(float cornerRadius) {
-        return Math.max(0.0F, Math.min(cornerRadius / 20f, 1.25F));
+        return com.atom.lib.design.ControlTokens.radiusFactor(cornerRadius);
     }
 
     /**

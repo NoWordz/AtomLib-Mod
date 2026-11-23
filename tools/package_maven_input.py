@@ -2,7 +2,7 @@
 """Build a deterministic AtomLib test-Maven archive for AC CI."""
 from __future__ import annotations
 
-import argparse, hashlib, zipfile
+import argparse, hashlib, json, zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
@@ -18,9 +18,20 @@ if not source.is_dir() or not any(source.rglob('*.jar')):
     parser.error(f'Maven input has no jars: {source}')
 if output.is_relative_to(source):
     parser.error('Output must be outside the input Maven tree')
+modules = ['core', 'runtime', 'ui', 'frontend-checker',
+           *json.loads((root/'versions/targets.json').read_text())['targets']]
+selected = []
+for module in modules:
+    artifact = f'atomlib-{module}'
+    directory = source/'com/atom/lib'/artifact/version
+    for extension in ('jar', 'pom', 'module'):
+        required = directory/f'{artifact}-{version}.{extension}'
+        if not required.is_file():
+            parser.error(f'Missing current release artifact: {required}')
+    selected.extend(path for path in directory.rglob('*') if path.is_file())
 output.parent.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    for path in sorted(p for p in source.rglob("*") if p.is_file()):
+    for path in sorted(selected):
         info = zipfile.ZipInfo(path.relative_to(source).as_posix(), (2020, 1, 1, 0, 0, 0))
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o644 << 16

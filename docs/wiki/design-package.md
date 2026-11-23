@@ -1,5 +1,7 @@
 # AtomChat design package
 
+0.7.2 的集合皮肤扩展保留原有外观和解释器 epoch 1。语义代际与构建追溯指纹的区别、升级规则及旧绑定支持范围见 [API compatibility](../api-contracts.md#frontend-contract-compatibility)；集合扩展接口见 [控件文档](controls.md#072-集合皮肤)。
+
 ## 0.5 安全入口
 
 新界面优先使用 `AtomDefault.createSession(runtime)`；每个窗口拥有自己的 theme/motion 选择、控件、焦点与反馈。`beginFrame` 固定快照，SettingsShell 和控件共同消费实例皮肤；`frame.card/panel` 用于直绘与明确的模糊降级。主题与动效可独立预览，选择器不读写宿主配置。完整示例、材质与兼容边界见 [sessions](sessions.md)。

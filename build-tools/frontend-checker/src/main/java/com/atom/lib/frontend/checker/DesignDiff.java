@@ -25,7 +25,7 @@ public final class DesignDiff {
         if(Objects.equals(a,b))return;
         if(a instanceof Map<?,?> am&&b instanceof Map<?,?> bm){
             Set<String> keys=new TreeSet<>();am.keySet().forEach(k->keys.add(k.toString()));bm.keySet().forEach(k->keys.add(k.toString()));
-            for(String key:keys){Object ak=am.keySet().stream().filter(k->k.toString().equals(key)).findFirst().orElse(null),bk=bm.keySet().stream().filter(k->k.toString().equals(key)).findFirst().orElse(null);walk(path+"/"+key,am.get(ak),bm.get(bk),out);}return;
+            for(String key:keys){Object ak=am.keySet().stream().filter(k->k.toString().equals(key)).findFirst().orElse(null),bk=bm.keySet().stream().filter(k->k.toString().equals(key)).findFirst().orElse(null);walk(path+"/"+key,ak==null?null:am.get(ak),bk==null?null:bm.get(bk),out);}return;
         }
         if(a!=null&&b!=null&&a.getClass()==b.getClass()&&a.getClass().isRecord()){
             try{for(RecordComponent field:a.getClass().getRecordComponents())walk(path+"/"+field.getName(),field.getAccessor().invoke(a),field.getAccessor().invoke(b),out);}

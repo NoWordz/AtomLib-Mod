@@ -1,6 +1,15 @@
 # AtomLib status
 
-**当前桌面发行版为 0.7.0。** [GitHub Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0) · [接入文档](wiki/sessions.md)
+**当前源码为尚未发布的 0.7.2 候选。** AtomLib 独立公开版仍为 [0.7.0](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0)，0.7.1 已随 [AtomChat 0.9.5](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5) 的三端配套 JAR 和固定输入公开。
+
+## 0.7.2 开发状态
+
+- 以可核对公开源码的 0.7.1 快照为基线，保留原工作区 WIP。计划见 [0.7.2 实施计划](superpowers/plans/2026-11-23-v072-hardening.md)。
+- 已修复 ResourceScope 旧票据重复转交误关；通用集合改用可扩展皮肤，默认绘制与语义代际保持。
+- 0.7.1 公开模块的 1,971 个公开符号无缺失，旧版编译消费者在候选运行，36 个默认集合场景逐像素一致。三端构建、六个隔离加载器消费者、三个纯 Maven 消费者及缺 ICU 负例均通过；408 项公共测试、三端共 243 项隐藏 GL/失败回退检查和 WSL 的 512 次目标切换均通过，无跳过。对应提交的远端 CI 待运行。
+- 不将 CPU、隐藏窗口 GL 或短循环资源检查视作完整游戏、中文输入法组字或长期硬件验收。已有 Linux 偶发闪烁尚未定位，具体结论随验证记录更新。
+
+以下按版本保留历史交付记录；旧阶段中的待办和旧路径不代表当前开发入口。
 
 ## 0.7.0 交付状态
 
@@ -27,7 +36,7 @@
 
 2026-11-19，历史和管理员托管两页的默认 Screen 路由已接严格正文，继续使用原头栏、页签、输入顺序、模态和转场。三端候选各 768 个精确组合成员及 93 个宿主路由，遗留兄弟页面分别登记。两组真实页面软件重放各 224 帧相同。后续补齐 140 份原实现冻结样本，Forge、Fabric、NeoForge 的本地普通 `build check` 在测试专用审定输入下通过实际场景门。剩余正式审定版本、目标 Linux CI、独立审查和实机窗口及听感。 [两页场景与准入记录](verification/2026-11-18-frontend-contract-lock-stage-three.md#11-19-两页实际场景包)
 
-性能联审修复仍位于 `codex/atomlib-performance` 的 `5e91ab1`，双向反哺另行安排。
+11/18 性能联审的 ResourceScope 保护已进入 0.7.2 候选；原 `codex/atomlib-performance` 的 `5e91ab1` 保留为来源记录。
 
 ## 2026-11-18 前端契约锁收口，未完成
 

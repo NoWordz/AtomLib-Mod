@@ -1,5 +1,33 @@
 # Release Notes
 
+## v0.7.2
+
+- 修复异步资源重复转交时可能提前关闭仍在使用的图片等资源的问题。
+- 网格和表格支持宿主自定义皮肤，默认外观、旧 API 和前端契约兼容规则保持。
+- 开发构建输入包含当前版本的完整七模块，草稿发行附带 Maven ZIP、校验文件和双语说明。
+
+----
+
+- Fixed duplicate asynchronous transfers potentially closing images and other resources still in use.
+- Grids and tables support host-defined skins while retaining default appearance, existing APIs and frontend contract compatibility.
+- Developer build inputs contain all seven modules for the current version, and draft releases include the Maven ZIP, checksum and bilingual notes.
+
+## v0.7.1
+
+- 修复 Forge 1.20.1 在 Windows 上打开使用 Yoga 布局的界面时崩溃的问题。
+- 修复库升级后 AtomChat 0.9.2 设置契约无法加载的问题。
+- 新的前端契约使用稳定语义代际，继续支持公开 0.6.0 和 0.7.0 的旧绑定。
+- 前端检查器修复新增配置键时报错，并为宿主提供类型化的运行期兼容诊断。
+- 原生库继续使用 0.7.0 的下载源与离线 ZIP。
+
+----
+
+- Fixed a crash when a screen first uses Yoga layout on Windows with Forge 1.20.1.
+- Fixed loading the AtomChat 0.9.2 settings contract after upgrading the library.
+- New frontend contracts use a stable interpreter epoch and retain support for the public 0.6.0 and 0.7.0 bindings.
+- Fixed checker diagnostics for new configuration keys and added a typed runtime compatibility error for hosts.
+- Native libraries continue to use the 0.7.0 download sources and offline ZIPs.
+
 ## v0.7.0
 
 - macOS 与 glibc Linux 客户端首次启动会在后台下载当前 JVM 架构对应的原生库，支持 x64 和 ARM64，缓存可离线复用。

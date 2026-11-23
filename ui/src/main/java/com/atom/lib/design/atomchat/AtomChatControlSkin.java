@@ -13,6 +13,8 @@ import java.util.*;
 /** AC materials with instance-local style. All role geometry is Yoga-produced. */
 public final class AtomChatControlSkin implements ControlSkin {
     private AtomChatControlStyle style;
+    private AtomChatControlStyle collectionStyle;
+    private CollectionSkin collectionSkin;
     private final boolean themedModalSurface;
     private final boolean elasticToggle;
     private static final ControlSpring TOGGLE_SPRING=new ControlSpring(100,.5f,.001f,.01f,.5);
@@ -29,6 +31,10 @@ public final class AtomChatControlSkin implements ControlSkin {
     public AtomChatControlSkin(AtomChatControlStyle style,boolean themedModalSurface,boolean elasticToggle){this.themedModalSurface=themedModalSurface;this.elasticToggle=elasticToggle;updateStyle(style);}
     public void updateStyle(AtomChatControlStyle style){this.style=Objects.requireNonNull(style);}
     public AtomChatControlStyle style(){return style;}
+    @Override public CollectionSkin collectionSkin(){
+        if(!style.equals(collectionStyle)){collectionStyle=style;collectionSkin=new AtomChatCollectionSkin(style);}
+        return collectionSkin;
+    }
     public ControlMotion motion(){return timing;}
     public Optional<ControlSpring> toggleSpring(){return elasticToggle&&(policy==null||policy.enabled())?Optional.of(TOGGLE_SPRING):Optional.empty();}
     public LayoutNode actionNode(NodeId id,ActionModel m,LayoutStyle outer,TextService text,float iconSize){

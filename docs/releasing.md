@@ -15,7 +15,7 @@ python tools/package_maven_input.py
 
 The packaging command builds the three platform distributions, publishes their merged coordinates to `build/test-maven`, verifies JAR contents/natives, and checks six isolated example consumers plus pure Maven probes. Run the root publication task with JDK 17 to add the standalone core, runtime, UI and frontend checker to the same Maven tree. Fabric consumer checks clear the relevant Loom remap cache before resolving a same-version input.
 
-`package_maven_input.py` archives the local Maven tree and writes its checksum. Before running it for a release, ensure that tree contains the intended version and no unrelated historical artifacts.
+`package_maven_input.py` selects the current version of the three target distributions plus core, runtime, UI and the frontend checker, then writes a deterministic archive and its checksum. Each selected module must contain its JAR, POM and Gradle module metadata. Historical versions and unrelated coordinates are excluded; fixed-version resolution does not require repository-level version listings.
 
 ## Publish to GitHub Releases
 
@@ -26,7 +26,9 @@ The packaging command builds the three platform distributions, publishes their m
 5. Attach the Forge, Fabric and NeoForge installation JARs, the matching `atomlib-input-VERSION.zip`, and its `.sha256` file. The Maven archive is for developers and must not be presented as an installation mod.
 6. Read back the release, tag, body and uploaded asset digests; compare them with the local verified files. If a digest is unavailable, download the asset and compare its contents. Confirm the published state before announcing completion.
 
-The manual `release` workflow creates a draft with its selected label; it does not by itself establish that a final version has been published. Public Maven hosting and mod-store publication are separate distribution operations and are not configured by this guide.
+The manual `release` workflow creates a draft with its selected label. It includes the three installation JARs, seven-module Maven archive and checksum, four desktop offline bundles, and the selected bilingual section of `RELEASE_NOTES.md`. It targets the workflow commit and does not by itself establish that a final version has been published. Public Maven hosting and mod-store publication are separate distribution operations and are not configured by this guide.
+
+The independent build workflow runs on `main`, `codex/**`, pull requests and manual dispatch. Its Windows compatibility step compiles a consumer against the fixed public 0.7.1 modules, runs that same binary against the candidate, checks public descriptors and compares 36 default collection scenes at three pixel densities. This is an offline compatibility check, separate from game, IME and hardware validation.
 
 ## Host upgrades and validation scope
 

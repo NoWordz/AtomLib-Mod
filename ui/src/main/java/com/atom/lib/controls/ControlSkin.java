@@ -5,6 +5,11 @@ import com.atom.lib.text.TextService;
 import io.github.humbleui.skija.Canvas;
 import java.util.Optional;
 public interface ControlSkin {
+    /** Override to supply collection chrome without adopting the default design package. */
+    default CollectionSkin collectionSkin() {
+        return new com.atom.lib.design.atomchat.AtomChatCollectionSkin(appearanceStyle()
+                .orElseGet(com.atom.lib.design.atomchat.AtomChatControlStyle::defaults));
+    }
     /** Optional new-frame hook; old custom skins remain binary compatible. Supply a separate mutable skin per session. */
     default void beginAppearance(com.atom.lib.design.atomdefault.ThemeSnapshot theme,com.atom.lib.motion.MotionSpec motion){}
     /** Whole-frame chrome/input appearance, when this skin participates in the new snapshot contract. */

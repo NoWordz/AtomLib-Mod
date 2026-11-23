@@ -1,6 +1,6 @@
 // Pure Java contracts: deliberately no Minecraft, Skija or Yoga dependency.
-// A mechanism stamp is common to standalone and all three hosts. It is generated
-// from the library's actual implementation inputs, never maintained as a version label.
+// The full provenance fingerprint is common to standalone and all three hosts.
+// FCL compatibility uses an independently versioned interpreter epoch.
 def mechanismRoot = projectDir.parentFile
 def mechanismInputs = fileTree(mechanismRoot) {
     include 'core/src/main/**', 'runtime/src/main/**', 'ui/src/main/**'

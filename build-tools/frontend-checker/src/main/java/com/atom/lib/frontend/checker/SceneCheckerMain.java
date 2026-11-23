@@ -19,7 +19,8 @@ public final class SceneCheckerMain {
         if (!hasRunnerBinding(old)) return new ProjectCheck.Result("MISSING_EVIDENCE",List.of("MISSING_IMPLEMENTATION_BINDING scene runner requires reviewed source closure: "+main));
         Set<String> protectedFiles=Set.copyOf(Arrays.asList(old.getProperty("protectedFiles","").split(";")));
         if(!protectedFiles.contains(reference))return new ProjectCheck.Result("MISSING_EVIDENCE",List.of("UNBOUND_SCENE_REFERENCE protectedFiles must include "+reference));
-        byte[] proposed=ProjectCheck.proposed(config),approved=Files.readAllBytes(safe(reviewed,old.getProperty("design")));
+        byte[] approved=Files.readAllBytes(safe(reviewed,old.getProperty("design")));
+        byte[] proposed=ProjectCheck.proposedAgainstReview(config,current,approved);
         if(!Arrays.equals(proposed,approved)||!current.equals(old))return new ProjectCheck.Result("PENDING_DESIGN_REVIEW",List.of("PENDING_DESIGN_REVIEW source and scenario package differ"));
         boolean useTest = "test".equals(old.getProperty("scene.sourceSet"));
         if (useTest) {

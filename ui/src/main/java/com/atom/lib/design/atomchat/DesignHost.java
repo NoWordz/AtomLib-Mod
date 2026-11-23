@@ -8,7 +8,7 @@ package com.atom.lib.design.atomchat;
  * consulting the legacy shared state.
  */
 public interface DesignHost {
-    /** Corner radius on the 1080p basis. {@code 20} is AtomChat's default. */
+    /** Host-validated corner setting on the 1080p basis, where {@code 20} gives the base radius. */
     float cornerRadius();
 
     /** True while the panel is attached to a screen edge, which squares off

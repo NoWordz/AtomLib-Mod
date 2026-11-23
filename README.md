@@ -15,6 +15,8 @@
 
 ## Install
 
+This source tree targets the **0.7.2 candidate**, which has not been published. The latest standalone AtomLib release is 0.7.0; AtomLib 0.7.1 is available as the companion JARs on the [AtomChat 0.9.5 release](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5).
+
 Choose the Forge, Fabric or NeoForge JAR that matches your Minecraft version and put it in `mods/` alongside the mod that requires AtomLib.
 
 | Client OS | JVM architectures | Native libraries |
@@ -29,6 +31,7 @@ On the first download, macOS and Linux try the Aliyun Maven mirror, then fall ba
 - **Layout and rendering** with Yoga layout, Skija drawing and Minecraft adapters for backdrop blur and vanilla item icons.
 - **Window-local sessions** with independent themes, motion and feedback.
 - **Controls and collections** for dialogs, text and numeric editing, and virtual grids and tables.
+- **Collection skins** can supply their own item surfaces, table headers and scrollbars while retaining the default appearance for existing hosts.
 - **Frontend contracts** that check approved UI design, interactions and feedback using Gradle.
 
 ## Develop with AtomLib

@@ -22,8 +22,10 @@ public final class ResourceScope implements AutoCloseable {
     public boolean accept(long ticket, AutoCloseable resource) {
         Objects.requireNonNull(resource);
         synchronized (this) {
+            // A stale duplicate still belongs to this scope; rejecting it must
+            // not dispose the object retained by the current generation.
+            if (resources.stream().anyMatch(r -> r == resource)) throw new IllegalArgumentException("Already owned");
             if (!closed && ticket == generation) {
-                if (resources.stream().anyMatch(r -> r == resource)) throw new IllegalArgumentException("Already owned");
                 resources.add(resource);
                 return true;
             }

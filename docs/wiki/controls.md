@@ -1,6 +1,14 @@
 # 可选控件与设置页面材料（本地候选）
 
-0.5 新界面使用 `AtomDefault.createSession`；单行/多行/数值输入、主题/动效选择与预览、虚拟网格/列表见 [会话与通用前端能力](sessions.md)。下文保留现有控件与旧候选的 API 说明；历史构建路径不代表当前 0.5.0 产物。
+新界面使用 `AtomDefault.createSession`；单行/多行/数值输入、主题/动效选择与预览、虚拟网格/列表见 [会话与通用前端能力](sessions.md)。下文中的历史验证只覆盖其注明的版本与范围。
+
+## 0.7.2 集合皮肤
+
+自定义 `ControlSkin` 可覆盖 `collectionSkin()`，返回本帧固定的 `CollectionSkin`。四个入口分别绘制条目底面、表头底面、表头文字和滚动条，使用 `Canvas`、`Rect`、`TextService` 和悬停状态，不要求宿主依赖 AtomChat 样式。条目内容仍由 `ItemPainter` 绘制，几何、命中、排序意图与虚拟化仍由 `VirtualCollection` 维护；皮肤不应改变这些业务状态。
+
+默认实现通过 `AtomChatCollectionSkin` 保留原有绘制。`AtomChatControlSkin` 按不可变样式复用该快照，更新主题不会改变已经取得的本帧快照；旧自定义皮肤无需实现新方法。无 `ControlContext` 的旧重载仍不画条目底面和表头文字。
+
+`com.atom.lib.design.ControlTokens` 提供通用缩放、半径换算与默认集合几何。`UiTokens.SCALE`、`s`、`radiusFactor` 的旧符号及数值保持，聊天专用 token 仍留在原兼容入口。
 
 ## 宿主按钮：统一字号和居中
 

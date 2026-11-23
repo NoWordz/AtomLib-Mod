@@ -2,7 +2,7 @@ name: AtomLib build
 
 on:
   push:
-    branches: ["main", "codex/v070-cross-platform-natives"]
+    branches: ["main", "codex/**"]
     paths-ignore: ["docs/**", "**.md"]
   pull_request:
     paths-ignore: ["docs/**", "**.md"]
@@ -33,6 +33,8 @@ jobs:
         run: |
           python3 tools/test_verify_artifacts.py
           python3 tools/test_verify_consumers.py
+          python3 tools/test_package_maven_input.py
+          python3 tools/test_extract_release_notes.py
           python3 tools/verify_ui_examples.py
 
   source-native:
@@ -65,6 +67,26 @@ jobs:
           name: frontend-native-scenes
           path: build/frontend-contract-lock/native-scene-*/
           if-no-files-found: error
+      - name: Released API, old binary and default collection pixels
+        shell: pwsh
+        run: |
+          $archive=Join-Path $env:RUNNER_TEMP 'atomlib-input-0.7.1.zip'
+          Invoke-WebRequest 'https://github.com/NoWordz/AtomChat-Mod/releases/download/atomlib-input-0.7.1/atomlib-input-0.7.1.zip' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne '6b226cde719114cc879928cf7178b5fa31ebcbd1bf9f4c6748b4153fcd611ab8') { throw 'Released compatibility input changed' }
+          $classpathOutput=Join-Path $pwd 'build/v072-evidence/probe-classpath.txt'
+          .\gradlew.bat frontendProbeClasspath -I tools/frontend-contract-lock/probe-classpath.init.gradle "-PfrontendProbeClasspathOutput=$classpathOutput" --no-daemon --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/verify_previous_release.py --baseline-archive "$archive" --java-home "$env:JAVA_HOME" --classpath "$classpathOutput" --output build/v072-evidence/previous-release
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: released-api-and-collection-compatibility
+          path: |
+            build/v072-evidence/previous-release/*.json
+            build/v072-evidence/previous-release/*.log
+            build/v072-evidence/previous-release/old/*.png
+            build/v072-evidence/previous-release/new/*.png
+          if-no-files-found: warn
 
   frontend-consumers:
     runs-on: windows-latest
@@ -158,6 +180,8 @@ jobs:
           python tools/run_packaging.py all --jobs 1; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/test_verify_artifacts.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/test_verify_consumers.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_package_maven_input.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_extract_release_notes.py; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/verify_ui_examples.py
       - name: Archive pinned Maven input
         shell: pwsh

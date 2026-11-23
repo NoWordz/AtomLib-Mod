@@ -6,16 +6,49 @@ import static com.atom.lib.frontend.contract.ContractDesign.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ContractRegistryTest {
-    @Test void approvedBytesFromAnotherMechanismCannotSilentlyUseTheCurrentInterpreter(){
-        var d=DesignResolverTest.fixture();
-        var incompatible=new ContractDesign(d.format(),d.namespace(),d.version(),d.profile(),d.scopes(),d.states(),d.parameters(),d.families(),d.roles(),d.recipes(),d.layouts(),d.assets(),d.pages(),Map.of("mechanism/atomlib","0".repeat(64)));
-        byte[] bytes=ContractCodec.encode(incompatible);
-        var failure=assertThrows(IllegalArgumentException.class,()->ContractRegistry.load(bytes,ContractRegistry.manifest(bytes,bytes),Set.of("example/1")));
-        assertTrue(failure.getMessage().startsWith("INCOMPATIBLE_PROFILE"),failure.toString());
-        var compatible=new ContractDesign(d.format(),d.namespace(),d.version(),d.profile(),d.scopes(),d.states(),d.parameters(),d.families(),d.roles(),d.recipes(),d.layouts(),d.assets(),d.pages(),Map.of(MechanismIdentity.BINDING,MechanismIdentity.current()));
-        byte[] current=ContractCodec.encode(compatible);
-        assertDoesNotThrow(()->ContractRegistry.load(current,ContractRegistry.manifest(current,current),Set.of("example/1")));
+    @Test void admitsTheTwoReviewedLegacyMechanismsWithoutRewritingTheManifest() {
+        for (String fingerprint : List.of(
+                "595aed94fa5c0b076682d6555df481cf7f065da672801e9d841399d317fb57c7",
+                "685cf4bd479a4fbf89559a529b9f4f168ae1617a7f01eef8c2e3ea3a8a735418")) {
+            byte[] design = withMechanism(fingerprint);
+            var registry = load(design);
+            assertEquals("settings", registry.page("settings").id());
+        }
     }
+
+    @Test void stableEpochIsAcceptedAndBuildFingerprintsCannotSubstituteForIt() {
+        byte[] stable = withMechanism("9cc8c318f8494c7ca101d606b5dca41805fbce4fc8bac9965f88c44b99b5854e");
+        assertEquals("settings", load(stable).page("settings").id());
+
+        for (String binding : List.of("302f90e" + "0".repeat(57), MechanismIdentity.current())) {
+            byte[] incompatible = withMechanism(binding);
+            var failure = assertThrowsExactly(ContractCompatibilityException.class, () -> load(incompatible));
+            assertEquals(ContractCompatibilityException.Reason.MECHANISM_MISMATCH, failure.reason());
+            assertTrue(failure.getMessage().startsWith("INCOMPATIBLE_PROFILE"), failure.toString());
+        }
+    }
+
+    @Test void partiallyBoundDesignCannotOmitTheMechanism() {
+        byte[] partial = withBindings(Map.of("config/protocol", "1".repeat(64)));
+        var failure = assertThrowsExactly(ContractCompatibilityException.class, () -> load(partial));
+        assertEquals(ContractCompatibilityException.Reason.MISSING_MECHANISM_BINDING, failure.reason());
+    }
+
+    private static ContractRegistry load(byte[] bytes) {
+        return ContractRegistry.load(bytes, ContractRegistry.manifest(bytes, bytes), Set.of("example/1"));
+    }
+
+    private static byte[] withMechanism(String binding) {
+        return withBindings(Map.of(MechanismIdentity.BINDING, binding));
+    }
+
+    private static byte[] withBindings(Map<String, String> bindings) {
+        var d = DesignResolverTest.fixture();
+        return ContractCodec.encode(new ContractDesign(d.format(), d.namespace(), d.version(), d.profile(),
+                d.scopes(), d.states(), d.parameters(), d.families(), d.roles(), d.recipes(), d.layouts(),
+                d.assets(), d.pages(), bindings));
+    }
+
     @org.junit.jupiter.api.Test void conditionalCapabilitiesAreResolvedFromActualNamedState(){
         var d=DesignResolverTest.fixture();var roles=new java.util.HashMap<>(d.roles());var required=new java.util.EnumMap<ContractDesign.Aspect,ContractDesign.Requirement>(roles.get("action").requirements());required.put(ContractDesign.Aspect.HOVER,ContractDesign.Requirement.conditional(new NamedCondition.State("hover")));roles.put("action",new ContractDesign.Role(true,required));
         var conditional=DesignResolverTest.copy(d,d.families(),roles,d.recipes(),d.pages());byte[] bytes=ContractCodec.encode(conditional);var r=ContractRegistry.load(bytes,ContractRegistry.manifest(bytes,bytes),java.util.Set.of("example/1")).page("settings").recipe("card");

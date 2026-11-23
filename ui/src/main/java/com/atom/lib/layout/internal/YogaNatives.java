@@ -3,6 +3,7 @@ package com.atom.lib.layout.internal;
 import com.atom.lib.natives.ClientNatives;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,8 +12,8 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.regex.Pattern;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -118,31 +119,29 @@ public final class YogaNatives {
         }
     }
 
-    /** Fallback for loaders that keep nested jars out of the classpath resources. */
-    private static byte[] readFromEmbeddedNatives(String platform, String fileName) {
+    /** Reads the bundled Windows DLL even when JarJar does not expose the native module. */
+    private static byte[] readFromEmbeddedNatives(String platform, String fileName) throws IOException {
+        if (!platform.startsWith("windows/")) return null;
+        var index = new Properties();
+        try (InputStream input = YogaNatives.class.getResourceAsStream("/META-INF/atomlib/native-artifacts.properties")) {
+            if (input == null) return null;
+            index.load(input);
+        }
+        String version = index.getProperty("yogaVersion");
+        if (version == null) return null;
+        String classifier = platform.equals("windows/arm64") ? "natives-windows-arm64" : "natives-windows";
+        String jar = "/META-INF/jarjar/lwjgl-yoga-" + version + "-" + classifier + ".jar";
         String entry = platform + "/org/lwjgl/yoga/" + fileName;
-        try {
-            var source = YogaNatives.class.getProtectionDomain().getCodeSource();
-            if (source == null) return null;
-            Path self = Path.of(source.getLocation().toURI());
-            if (!Files.isRegularFile(self)) return null;
-            try (ZipFile jar = new ZipFile(self.toFile())) {
-                var entries = jar.entries();
-                while (entries.hasMoreElements()) {
-                    var candidate = entries.nextElement();
-                    String name = candidate.getName();
-                    if (!name.startsWith("META-INF/jarjar/") || !name.contains("yoga") || !name.endsWith(".jar")) continue;
-                    try (InputStream in = jar.getInputStream(candidate); ZipInputStream nested = new ZipInputStream(in)) {
-                        var nestedEntry = nested.getNextEntry();
-                        while (nestedEntry != null) {
-                            if (entry.equals(nestedEntry.getName())) return nested.readAllBytes();
-                            nestedEntry = nested.getNextEntry();
-                        }
-                    }
+
+        // Forge exposes a union filesystem root as the code source. Open the JarJar entry
+        // from this class's module so neither a physical jar path nor a sibling module is required.
+        try (InputStream input = YogaNatives.class.getResourceAsStream(jar)) {
+            if (input == null) return null;
+            try (var nested = new ZipInputStream(input)) {
+                for (var candidate = nested.getNextEntry(); candidate != null; candidate = nested.getNextEntry()) {
+                    if (entry.equals(candidate.getName())) return nested.readAllBytes();
                 }
             }
-        } catch (Exception ignored) {
-            return null;
         }
         return null;
     }

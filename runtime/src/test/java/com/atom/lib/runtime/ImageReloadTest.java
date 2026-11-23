@@ -10,6 +10,23 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ImageReloadTest {
+    @Test void staleDuplicateTransferKeepsTheCachedNativeImageDrawable() {
+        try (var handle = AtomLibRuntime.open("duplicate-image"); var store = new ImageStore(handle);
+             var surface = Surface.makeRasterN32Premul(40, 40)) {
+            long old = store.generation();
+            store.reload();
+            Image image = Image.makeFromEncoded(png());
+            assertTrue(store.acceptDecoded("current", store.generation(), image));
+            assertThrows(IllegalArgumentException.class, () -> store.acceptDecoded("late", old, image));
+            assertFalse(image.isClosed());
+            assertEquals(1, store.size());
+            store.draw("current", surface.getCanvas(), new Rect(0, 0, 40, 40), ImageFit.COVER, 0);
+            assertEquals(0xffff0000, color(surface, 20, 20));
+            store.close();
+            assertTrue(image.isClosed());
+        }
+    }
+
     private byte[] png() {
         try (var surface = Surface.makeRasterN32Premul(20, 10)) {
             surface.getCanvas().clear(0xffff0000);

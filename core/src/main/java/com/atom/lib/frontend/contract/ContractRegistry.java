@@ -19,7 +19,12 @@ public final class ContractRegistry {
         ContractDesign decoded=ContractCodec.decode(design);
         try(var in=new DataInputStream(new ByteArrayInputStream(manifest))){if(in.readInt()!=0x46434d01||in.readInt()!=design.length||!Arrays.equals(in.readNBytes(design.length),design)||in.read()!=-1)throw new IOException("manifest and packaged design differ");}
         catch(IOException e){throw new IllegalArgumentException("MISSING_EVIDENCE approved build manifest: "+e.getMessage(),e);}
-        if(!profiles.contains(decoded.profile()))throw new IllegalArgumentException("INCOMPATIBLE_PROFILE "+decoded.profile());MechanismIdentity.require(decoded);return new ContractRegistry(decoded);
+        if (!profiles.contains(decoded.profile())) {
+            throw new ContractCompatibilityException(ContractCompatibilityException.Reason.UNSUPPORTED_PROFILE,
+                    decoded.profile());
+        }
+        MechanismIdentity.require(decoded);
+        return new ContractRegistry(decoded);
     }
     public String namespace(){return design.namespace();}
     public String version(){return design.version();}

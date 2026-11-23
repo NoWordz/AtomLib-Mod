@@ -34,20 +34,34 @@ jobs:
           JAVA17_HOME: ${{ steps.java17.outputs.path }}
           JAVA21_HOME: ${{ steps.java21.outputs.path }}
         run: python tools/run_packaging.py consumers --jobs 1
+      - name: Publish all seven Maven modules
+        env:
+          JAVA_HOME: ${{ steps.java17.outputs.path }}
+        run: .\gradlew.bat :publishToTestRepository --no-daemon --console=plain
       - name: Collect jars
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Copy-Item platforms/*/build/libs/atomlib-*-v*.jar dist/
           Get-ChildItem dist
+      - name: Archive current Maven input
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path gradle.properties -Pattern '^atomlib_version=(.+)$').Matches[0].Groups[1].Value
+          python tools/package_maven_input.py --output "dist/atomlib-input-$version.zip"
       - name: Build verified desktop offline bundles
         run: python tools/package_native_bundles.py --output dist
       - name: Draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_LABEL: ${{ inputs.label }}
         shell: pwsh
         run: |
           $version = (Select-String -Path gradle.properties -Pattern '^atomlib_version=(.+)$').Matches[0].Groups[1].Value
-          $label = '${{ inputs.label }}'
+          $label = $env:RELEASE_LABEL
+          if ($label -and $label -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { throw 'Invalid release label' }
           $tag = if ($label) { "v$version-$label" } else { "v$version" }
-          gh release create $tag --draft --title "AtomLib $version" --notes "Platform jars for Minecraft 1.20.1 Forge and 1.21.1 Fabric/NeoForge." dist/*
+          $notes = Join-Path $env:RUNNER_TEMP 'atomlib-release-notes.md'
+          python tools/extract_release_notes.py --version "$version" --output "$notes"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          gh release create $tag --draft --target "$env:GITHUB_SHA" --title "AtomLib $version" --notes-file "$notes" dist/*

@@ -80,3 +80,38 @@ the default framebuffer or claim HDR/multisample support.
 ### 可组合模态生命周期
 
 `open(ModalDialog, Consumer<ModalCloseReason>)` 打开单层模态，`closeModal` 在无活动模态时幂等。关闭原因区分完成、取消、宿主关闭、失焦和坐标尺度变化。正常关闭后退场期间继续隔离底页；失焦、宿主关闭、坐标尺度变化和抛异常的关闭回调会释放会话所有权。焦点与滚动使用成功绘制的几何，画布保存栈在异常时恢复；不要缓存上帧布局来命中新的内容。保留已有 `ConfirmationDialog` 接口。
+
+## Frontend contract compatibility
+
+From AtomLib 0.7.1, newly compiled protocol 2 contracts bind
+`mechanism/atomlib` to the SHA-256 of the FCL03 interpreter epoch
+`atomlib/fcl03/interpreter/1`. Keep the epoch stable across compatible changes,
+including native packaging. A change that breaks interpretation of admitted
+FCL03 contracts requires a new semantic epoch and an explicit decision on
+which older bindings the interpreter can still support.
+
+The epoch 1 interpreter also accepts the exact published 0.6.0 and 0.7.0
+fingerprints as legacy bindings. The checker reproduces one of these legacy
+bindings during ordinary validation of the same reviewed namespace and design
+version. The candidate still has to match all reviewed bytes. A fresh
+`compile-project` uses the semantic epoch. `MechanismIdentity.current()`
+continues to report the full fingerprint from
+`META-INF/atomlib/fcl/mechanism.sha256`.
+
+`ContractRegistry.load` checks the canonical design, its matching manifest and
+the host's supported profiles. Callers can catch
+`com.atom.lib.frontend.contract.ContractCompatibilityException`, a subtype of
+`IllegalArgumentException`, and inspect `reason()` for
+`UNSUPPORTED_PROFILE`, `MECHANISM_MISMATCH`, `MISSING_MECHANISM_BINDING` or
+`INVALID_MECHANISM_METADATA`. Hosts still check their own expected namespace
+and design version. Page and recipe handles retain registry ownership.
+
+### 0.7.2 compatibility rules / 兼容规则
+
+0.7.2 保持 `atomlib/fcl03/interpreter/1`。修改已准入契约的解析、单位、绑定解释、布局/输入或声音语义，且旧输入会产生不兼容结果时，必须升 epoch 并明确旧绑定的支持范围；兼容 API 添加、资源所有权修复、原生库包装与发行路径变化不升代。完整构建指纹不能替代语义绑定，审定 manifest 的逐字节一致检查继续保留。
+
+0.7.2 retains `atomlib/fcl03/interpreter/1`. Advance the epoch when admitted contracts would be interpreted incompatibly, including parsing, units, binding interpretation, layout/input or sound semantics. Document which older bindings remain supported. Compatible API additions, ownership fixes, native packaging and distribution changes do not advance it. The full build fingerprint is provenance, and the approved manifest must still match byte for byte.
+
+`ResourceScope.accept` 拒绝已经持有的同一对象时抛出 `IllegalArgumentException`，包括过期票据；拒绝重复提交不释放原对象。过期或关闭后转交一个未持有的新对象，仍会释放该对象并返回 false。`ImageStore.acceptDecoded` 沿用这一所有权规则。
+
+`ResourceScope.accept` throws `IllegalArgumentException` for an already owned object, including a stale-ticket duplicate, without closing the retained resource. A distinct new object transferred with a stale ticket or after closure is still disposed and returns false. `ImageStore.acceptDecoded` follows the same ownership rule.

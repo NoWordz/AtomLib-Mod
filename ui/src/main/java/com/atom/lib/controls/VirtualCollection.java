@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.atom.lib.controls;
 
-import com.atom.lib.design.atomchat.*;
 import com.atom.lib.geometry.*;
 import com.atom.lib.input.*;
 import com.atom.lib.layout.*;
@@ -97,18 +96,18 @@ public final class VirtualCollection<K,T> implements AutoCloseable {
     public void paint(Canvas canvas,CollectionFrame<K,T> frame,ItemPainter<K,T> painter){paintInternal(canvas,frame,painter,null);}
     private void paintInternal(Canvas canvas,CollectionFrame<K,T> frame,ItemPainter<K,T> painter,ControlContext context){
         requireOpen();Objects.requireNonNull(canvas);Objects.requireNonNull(painter);if(frame.owner!=identity)throw new IllegalArgumentException("Foreign collection frame");
-        var style=context==null?AtomChatControlStyle.defaults():context.skin().appearanceStyle().orElseGet(()->context.skin() instanceof AtomChatControlSkin skin?skin.style():AtomChatControlStyle.defaults());
+        var chrome=context==null?CollectionSkin.defaults():Objects.requireNonNull(context.skin().collectionSkin());
         int saved=canvas.getSaveCount();canvas.save();
         try{
             clip(canvas,frame.bounds());
             for(var cell:frame.cells()){
                 var clip=frame.presentation().box(cell.id()).clip();int count=canvas.getSaveCount();canvas.save();
-                try{clip(canvas,clip);if(context!=null)UiCards.drawCard(canvas,cell.bounds().x(),cell.bounds().y(),cell.bounds().width(),cell.bounds().height(),columns.isEmpty()?8:0,Objects.equals(hovered,cell.key())?1:0,style,(x,y,w,h,r,s)->{});painter.paint(canvas,cell,cell.bounds());}finally{canvas.restoreToCount(count);}
+                try{clip(canvas,clip);if(context!=null)chrome.paintItem(canvas,cell.bounds(),columns.isEmpty(),Objects.equals(hovered,cell.key()));painter.paint(canvas,cell,cell.bounds());}finally{canvas.restoreToCount(count);}
             }
-            for(var column:columns){var r=frame.headers().get(column.id());SkiaDraw.drawRoundedRect(canvas,r.x(),r.y(),r.width(),r.height(),0,style.panelBackgroundColor()|0xff000000);
-                if(context!=null){String label=column.label()+(column.id().equals(sortedColumn)?ascending?" ↑":" ↓":"");var text=context.text().layout(new com.atom.lib.text.TextRequest(label,AtomChatFonts.HEADING,14,style.textColor(),1,true),new Constraints(Constraints.Axis.atMost(Math.max(0,r.width()-12)),Constraints.Axis.atMost(r.height())));context.text().draw(canvas,text,r.x()+6,r.y()+(r.height()-text.size().height())/2);}
+            for(var column:columns){var r=frame.headers().get(column.id());chrome.paintHeader(canvas,r);
+                if(context!=null){String label=column.label()+(column.id().equals(sortedColumn)?ascending?" ↑":" ↓":"");chrome.paintHeaderText(canvas,r,label,context.text());}
             }
-            var thumb=frame.thumb();if(thumb.height()>0){float opacity=smoothing.scrollbarOpacity(time,hovered!=null,dragging,motion);SkiaDraw.drawRoundedRect(canvas,thumb.x(),thumb.y(),thumb.width(),thumb.height(),2,((Math.round(opacity*130))<<24)|(style.textSecondaryColor()&0xffffff));}
+            var thumb=frame.thumb();if(thumb.height()>0){float opacity=smoothing.scrollbarOpacity(time,hovered!=null,dragging,motion);chrome.paintScrollbar(canvas,thumb,opacity);}
         }finally{canvas.restoreToCount(saved);}
         displayed=frame;extent=frame.extent();viewportHeight=frame.body().height();offset=frame.offset();smoothing.bounds(extent,viewportHeight);
     }

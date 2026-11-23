@@ -1,5 +1,9 @@
 package com.atom.lib.frontend.checker;
 
+import com.atom.lib.frontend.contract.ContractCodec;
+import com.atom.lib.frontend.contract.ContractDesign;
+import com.atom.lib.frontend.contract.MechanismIdentity;
+
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.*;
@@ -29,8 +33,8 @@ public final class ProjectCheck {
         Path candidate=current.toAbsolutePath().getParent().resolve(c.getProperty("design"));
         Path approved=reviewed.toAbsolutePath().getParent().resolve(r.getProperty("design"));
         if(!Files.isRegularFile(approved) || ("1".equals(c.getProperty("protocol"))&&!Files.isRegularFile(candidate))) return new Result("MISSING_EVIDENCE",List.of("MISSING_EVIDENCE design bytes missing"));
-        byte[] proposed=proposed(current,c);
         byte[] reviewedBytes=Files.readAllBytes(approved);
+        byte[] proposed=proposedAgainstReview(current,c,reviewedBytes);
         List<String> changes="2".equals(c.getProperty("protocol"))?DesignDiff.compare(reviewedBytes,proposed,r,c):List.of();
         String status=ApprovalCheck.assess(reviewedBytes,proposed,values(r,"profiles"));
         if(!Set.of("APPROVED_VALID","CANDIDATE_VALID").contains(status)){var errors=new ArrayList<String>(integrationChanges);errors.add(status+" design identity/profile differs");errors.addAll(changes);return new Result(status,errors);}
@@ -83,24 +87,40 @@ public final class ProjectCheck {
     }
 
     public static byte[] proposed(Path config,Properties properties)throws Exception {
+        return proposedAgainstReview(config, properties, null);
+    }
+
+    static byte[] proposedAgainstReview(Path config, Properties properties, byte[] reviewed) throws Exception {
         String property="2".equals(properties.getProperty("protocol"))?"author":"design";
         String name=properties.getProperty(property);if(name==null)throw new IllegalArgumentException("MISSING_EVIDENCE "+property);
         Path root=config.toAbsolutePath().getParent(),file=root.resolve(name).normalize();if(!file.startsWith(root))throw new IllegalArgumentException("INVALID_CONFIGURATION author/design escapes input root");
         if(!property.equals("author"))return Files.readAllBytes(file);
-        var d=com.atom.lib.frontend.contract.ContractCodec.decode(ContractAuthorCompiler.compile(file));
+        var d=ContractCodec.decode(ContractAuthorCompiler.compile(file));
         if(!d.buildBindings().isEmpty())throw new IllegalArgumentException("INVALID_AUTHOR build bindings are compiler-owned inputs");
         Map<String,String> bindings=new TreeMap<>();
-        bindings.put(com.atom.lib.frontend.contract.MechanismIdentity.BINDING,com.atom.lib.frontend.contract.MechanismIdentity.current());
+        MechanismIdentity.current(); // Validate the checker core's build provenance.
+        String mechanism = MechanismIdentity.compatibilityBinding();
+        if (reviewed != null) {
+            var approved = ContractCodec.decode(reviewed);
+            String legacy = approved.buildBindings().get(MechanismIdentity.BINDING);
+            // Ordinary approval still compares the entire independently compiled package byte for byte.
+            if (d.namespace().equals(approved.namespace()) && d.version().equals(approved.version())
+                    && MechanismIdentity.supportsLegacyBinding(legacy)) {
+                mechanism = legacy;
+            }
+        }
+        bindings.put(MechanismIdentity.BINDING, mechanism);
         for(String key:properties.stringPropertyNames())if(!Set.of("author","design").contains(key))bindings.put("config/"+key,digest(properties.getProperty(key).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         for(String relative:values(properties,"protectedFiles")){Path target=root.resolve(relative).normalize();if(!target.startsWith(root)||!Files.isRegularFile(target))throw new IllegalArgumentException("MISSING_EVIDENCE protected build input "+relative);bindings.put("file/"+relative,digest(Files.readAllBytes(target)));}
-        return com.atom.lib.frontend.contract.ContractCodec.encode(new com.atom.lib.frontend.contract.ContractDesign(d.format(),d.namespace(),d.version(),d.profile(),d.scopes(),d.states(),d.parameters(),d.families(),d.roles(),d.recipes(),d.layouts(),d.assets(),d.pages(),bindings));
+        return ContractCodec.encode(new ContractDesign(d.format(),d.namespace(),d.version(),d.profile(),d.scopes(),d.states(),d.parameters(),d.families(),d.roles(),d.recipes(),d.layouts(),d.assets(),d.pages(),bindings));
     }
     static String digest(byte[] bytes)throws Exception{return HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes));}
     public static byte[] proposed(Path config)throws Exception{return proposed(config,load(config));}
     /** Called only after ordinary checks. Emits the same canonical package and runtime admission. */
     public static void emitRuntime(Path current,Path reviewed,Path output)throws Exception {
         Properties c=load(current),r=load(reviewed);if(!"2".equals(c.getProperty("protocol")))throw new IllegalArgumentException("UNSUPPORTED runtime admission requires protocol 2");
-        byte[] candidate=proposed(current,c),approved=Files.readAllBytes(reviewed.toAbsolutePath().getParent().resolve(r.getProperty("design")));
+        byte[] approved=Files.readAllBytes(reviewed.toAbsolutePath().getParent().resolve(r.getProperty("design")));
+        byte[] candidate=proposedAgainstReview(current,c,approved);
         byte[] manifest=com.atom.lib.frontend.contract.ContractRegistry.manifest(candidate,approved);
         var design=com.atom.lib.frontend.contract.ContractCodec.decode(candidate);
         String prefix=design.namespace()+"/"+design.version()+"/";

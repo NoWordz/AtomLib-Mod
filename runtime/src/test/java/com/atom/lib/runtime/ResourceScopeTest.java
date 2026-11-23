@@ -7,6 +7,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ResourceScopeTest {
+    @Test void staleDuplicateCannotDisposeAResourceOwnedByTheCurrentGeneration() {
+        AtomicInteger disposed = new AtomicInteger();
+        AutoCloseable resource = disposed::incrementAndGet;
+        try (var scope = new ResourceScope("duplicate")) {
+            long old = scope.generation();
+            scope.reload();
+            assertTrue(scope.accept(scope.generation(), resource));
+            assertThrows(IllegalArgumentException.class, () -> scope.accept(old, resource));
+            assertEquals(0, disposed.get(), "A rejected duplicate must not close the retained object");
+            assertTrue(scope.release(resource));
+            assertEquals(1, disposed.get());
+            assertFalse(scope.release(resource));
+        }
+        assertEquals(1, disposed.get());
+    }
+
     @Test void staleCompletionIsDisposedAndHostsAreIsolated() {
         AtomicInteger disposed = new AtomicInteger();
         try (ResourceScope a = new ResourceScope("alpha"); ResourceScope b = new ResourceScope("beta")) {

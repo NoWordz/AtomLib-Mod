@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.7.2
+
+**修复**
+
+- 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题。
+
+**更改**
+
+- 通用网格和表格通过集合皮肤接口绘制，允许宿主自定义条目底面、表头和滚动条。
+- 通用缩放、半径换算和集合几何独立为 ControlTokens，保留 UiTokens 的原有入口和数值。
+- Maven 输入只打包当前版本的七个完整模块，草稿发行附带构建输入、校验文件和双语说明。
+- 独立构建覆盖 codex 开发分支，并检查旧版编译程序、公开 API 和默认集合外观。
+
+----
+
+**Fixed**
+
+- Fixed stale duplicate transfers closing a resource still retained in the current cache.
+
+**Changed**
+
+- Virtual grids and tables use a collection skin interface for custom item surfaces, headers and scrollbars.
+- Shared scale, radius conversion and collection geometry use ControlTokens while retaining existing UiTokens entry points and values.
+- Maven inputs contain only the seven complete modules for the current version, and draft releases include build inputs, checksums and bilingual notes.
+- Independent builds cover codex development branches and check released binaries, public APIs and default collection appearance.
+
+## v0.7.1
+
+**修复**
+
+- 修复 Forge 1.20.1 在 Windows 上初次使用 Yoga 布局时找不到内置 DLL 的问题。
+- 修复 AtomChat 0.9.2 等使用公开 0.6.0 契约的宿主在库升级后被拒绝加载的问题。
+- 修复前端检查器在配置或构建绑定新增键时无法输出设计差异的问题。
+
+**更改**
+
+- 新的前端契约绑定稳定的解释器语义代际，继续支持公开 0.6.0 和 0.7.0 的旧绑定。
+- 兼容性异常提供可编程的原因，完整构建指纹仍可用于诊断。
+- 原生依赖与离线 ZIP 沿用 0.7.0。
+
+----
+
+**Fixed**
+
+- Fixed Forge 1.20.1 failing to locate the bundled DLL on first use of Yoga layout on Windows.
+- Fixed contract loading after a library upgrade for hosts such as AtomChat 0.9.2 that use the public 0.6.0 contract binding.
+- Restored checker diagnostics when new configuration or build-binding keys appear.
+
+**Changed**
+
+- New frontend contracts use a stable interpreter epoch and continue to support legacy bindings from the public 0.6.0 and 0.7.0 builds.
+- Compatibility exceptions expose a machine-readable reason, and the full build fingerprint remains available for diagnostics.
+- Native dependencies and offline ZIPs are reused from 0.7.0.
+
 ## v0.7.0
 
 **新增**
