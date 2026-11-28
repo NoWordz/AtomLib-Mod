@@ -248,3 +248,7 @@ git show e8cf67ca:LICENSE
 2026-10-30 已把四个准入图标路径写入 `ui/.../IconPaths.java`，并保留 AtomChat MIT、Lucide ISC 与 Feather MIT 声明；把三个准入的 CC0 反馈音效写入 `platforms/shared/.../assets/atomlib/sounds/`，对应哈希与 `sounds.json` 记录在 `assets/MANIFEST.sha256`。字体、AtomChat 品牌/作者图、通知音、Tuui 内容与业务素材均未进入。`BackdropBlur` 是按 Skija `ImageFilter.makeBlur` 与既有行为契约独立实现，没有复制 AC 的 shader/GL 链。
 
 `assets/provenance.json` 的 `copied_to_atomlib` 与 `target_path` 已同步为实际文件；重复三端的候选音效仍只从 Forge 源复制一次到共享平台资源，避免三份重复内容。最终发行内容以三个 `0.1.0-local` JAR 的实际扫描、`assets/MANIFEST.sha256` 和 `licenses/` 为准；此文档不替代正式发布前的法律复核。
+
+### 0.8.0 Preview assets
+
+`PreviewThemes.java` adapts the ten color palettes in `shared/src/main/java/com/atom/chat/theme/ThemeService.java` at AtomChat `09b23f94ac6397c45915e9ba753e076812e59978`, with the 0.70 glass material opacity from that revision's `AtomChatConfig`. Its MIT notice is in `licenses/AtomChat-MIT.txt`. The data contains the semantic UI colors and glass setting; the host retains chat colors, theme persistence and geometry. `PreviewScrollFade` and `PreviewPageTransition` are independent implementations on Skija and the AtomLib presentation APIs, with Apache-2.0 source notices.

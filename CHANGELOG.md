@@ -1,30 +1,44 @@
 # Changelog
 
-## v0.7.2
+## v0.8.0
+
+**新增**
+
+- 提供十套可选 Preview 主题，带面板、卡片、胶囊、描边及玻璃材质颜色
+- 提供可中断的 240 ms 切页动效和滚动边缘渐隐，示例设置页可切换主题和动效
 
 **修复**
 
-- 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题。
+- 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题
 
 **更改**
 
-- 通用网格和表格通过集合皮肤接口绘制，允许宿主自定义条目底面、表头和滚动条。
-- 通用缩放、半径换算和集合几何独立为 ControlTokens，保留 UiTokens 的原有入口和数值。
-- Maven 输入只打包当前版本的七个完整模块，草稿发行附带构建输入、校验文件和双语说明。
-- 独立构建覆盖 codex 开发分支，并检查旧版编译程序、公开 API 和默认集合外观。
+- 网格和表格支持宿主自定义皮肤，保留原有默认样式和 API
+- Maven 输入包含当前版本的七个完整模块和校验文件
+
+**性能**
+
+- 三端物品图标可以通过专用纹理借用接口减少 OpenGL 状态查询，通用渲染回调继续完整保护宿主状态
 
 ----
 
+**Added**
+
+- Added ten opt-in Preview themes with panel, card, capsule, outline and glass material colors
+- Added interruptible 240 ms page transitions and scroll edge fading, with theme and motion choices in the settings example
+
 **Fixed**
 
-- Fixed stale duplicate transfers closing a resource still retained in the current cache.
+- Fixed stale duplicate transfers closing a resource still retained in the current cache
 
 **Changed**
 
-- Virtual grids and tables use a collection skin interface for custom item surfaces, headers and scrollbars.
-- Shared scale, radius conversion and collection geometry use ControlTokens while retaining existing UiTokens entry points and values.
-- Maven inputs contain only the seven complete modules for the current version, and draft releases include build inputs, checksums and bilingual notes.
-- Independent builds cover codex development branches and check released binaries, public APIs and default collection appearance.
+- Grids and tables support host-defined skins and retain the shipped defaults and APIs
+- Maven inputs contain all seven modules for the current version and a checksum
+
+**Performance**
+
+- Added a dedicated borrowed-texture path for item icons on all three loaders, with full host-state protection retained for general rendering callbacks
 
 ## v0.7.1
 

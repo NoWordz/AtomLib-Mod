@@ -36,6 +36,10 @@ subprojects {
         }
     }
 }
+project(':ui') {
+    tasks.named('jar') { from(rootProject.file('licenses/AtomChat-MIT.txt')) { into 'META-INF/licenses' } }
+    tasks.named('sourcesJar') { from(rootProject.file('licenses/AtomChat-MIT.txt')) { into 'META-INF/licenses' } }
+}
 apply from: 'gradle/module-layout.gradle'
 tasks.register('publishToTestRepository') {
     dependsOn subprojects.findAll { !it.path.startsWith(':probes') }.collect { "${it.path}:publishMavenJavaPublicationToTestRepository" }

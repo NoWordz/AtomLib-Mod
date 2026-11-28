@@ -40,7 +40,8 @@ tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.
 tasks.withType(AbstractArchiveTask).configureEach { preserveFileTimestamps = false; reproducibleFileOrder = true }
 tasks.named('processResources') {
     inputs.property('version', project.version)
-    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) { expand version: project.version }
+    inputs.property('atomlib_version', identity.atomlib_version)
+    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) { expand version: project.version, atomlib_version: identity.atomlib_version }
 }
 if (target.loader == 'forge') {
     tasks.named('jar') { finalizedBy 'reobfJar' }
@@ -81,4 +82,17 @@ tasks.register('sessionConsumerProbe', JavaExec) {
     dependsOn tasks.named('paragraphProbeClasses')
     classpath = sourceSets.paragraphProbe.runtimeClasspath
     mainClass = 'com.atom.example.verification.SessionConsumerProbe'
+}
+
+if (atomlibExampleId == 'atomlib_example_a') {
+    sourceSets.paragraphProbe.java.srcDir('../src/exampleProbe/java')
+    sourceSets.paragraphProbe.compileClasspath += sourceSets.main.output
+    sourceSets.paragraphProbe.runtimeClasspath += sourceSets.main.output
+    def previewExample = tasks.register('previewSettingsExample', JavaExec) {
+        dependsOn tasks.named('paragraphProbeClasses')
+        classpath = sourceSets.paragraphProbe.runtimeClasspath
+        mainClass = 'com.atom.example.a.PreviewSettingsExample'
+        args layout.buildDirectory.dir('reports/preview-settings').get().asFile.absolutePath
+    }
+    tasks.named('verifyConsumer') { dependsOn previewExample }
 }

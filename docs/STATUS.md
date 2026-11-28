@@ -1,8 +1,12 @@
 # AtomLib status
 
-**当前源码为尚未发布的 0.7.2 候选。** AtomLib 独立公开版仍为 [0.7.0](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0)，0.7.1 已随 [AtomChat 0.9.5](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5) 的三端配套 JAR 和固定输入公开。
+**当前源码为尚未发布的 0.8.0 候选。** AtomLib 独立公开版仍为 [0.7.0](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0)，0.7.1 已随 [AtomChat 0.9.5](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5) 的三端配套 JAR 和固定输入公开。
 
-## 0.7.2 开发状态
+## 0.8.0 开发状态
+
+- 从 0.7.2 加固候选继续开发，回迁 `bfcca160` 的三端专用纹理借用接口。Preview 独立主题目录、滚动渐隐和可中断动效均由宿主显式选用，见 [示例页与接入方式](wiki/sessions.md#preview-settings-assets)。
+
+## 0.7.2 加固候选历史
 
 - 以可核对公开源码的 0.7.1 快照为基线，保留原工作区 WIP。计划见 [0.7.2 实施计划](superpowers/plans/2026-11-23-v072-hardening.md)。
 - 已修复 ResourceScope 旧票据重复转交误关；通用集合改用可扩展皮肤，默认绘制与语义代际保持。

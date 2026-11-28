@@ -1,16 +1,44 @@
 # Release Notes
 
-## v0.7.2
+## v0.8.0
 
-- 修复异步资源重复转交时可能提前关闭仍在使用的图片等资源的问题。
-- 网格和表格支持宿主自定义皮肤，默认外观、旧 API 和前端契约兼容规则保持。
-- 开发构建输入包含当前版本的完整七模块，草稿发行附带 Maven ZIP、校验文件和双语说明。
+**新增**
+
+- 提供十套可选 Preview 主题，带面板、卡片、胶囊、描边及玻璃材质颜色
+- 提供可中断的 240 ms 切页动效和滚动边缘渐隐，示例设置页可切换主题和动效
+
+**修复**
+
+- 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题
+
+**更改**
+
+- 网格和表格支持宿主自定义皮肤，保留原有默认样式和 API
+- Maven 输入包含当前版本的七个完整模块和校验文件
+
+**性能**
+
+- 三端物品图标可以通过专用纹理借用接口减少 OpenGL 状态查询，通用渲染回调继续完整保护宿主状态
 
 ----
 
-- Fixed duplicate asynchronous transfers potentially closing images and other resources still in use.
-- Grids and tables support host-defined skins while retaining default appearance, existing APIs and frontend contract compatibility.
-- Developer build inputs contain all seven modules for the current version, and draft releases include the Maven ZIP, checksum and bilingual notes.
+**Added**
+
+- Added ten opt-in Preview themes with panel, card, capsule, outline and glass material colors
+- Added interruptible 240 ms page transitions and scroll edge fading, with theme and motion choices in the settings example
+
+**Fixed**
+
+- Fixed stale duplicate transfers closing a resource still retained in the current cache
+
+**Changed**
+
+- Grids and tables support host-defined skins and retain the shipped defaults and APIs
+- Maven inputs contain all seven modules for the current version and a checksum
+
+**Performance**
+
+- Added a dedicated borrowed-texture path for item icons on all three loaders, with full host-state protection retained for general rendering callbacks
 
 ## v0.7.1
 

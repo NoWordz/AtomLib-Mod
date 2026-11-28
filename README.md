@@ -15,7 +15,7 @@
 
 ## Install
 
-This source tree targets the **0.7.2 candidate**, which has not been published. The latest standalone AtomLib release is 0.7.0; AtomLib 0.7.1 is available as the companion JARs on the [AtomChat 0.9.5 release](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5).
+This source tree targets the **0.8.0 candidate**, which has not been published. The latest standalone AtomLib release is 0.7.0; AtomLib 0.7.1 is available as the companion JARs on the [AtomChat 0.9.5 release](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5).
 
 Choose the Forge, Fabric or NeoForge JAR that matches your Minecraft version and put it in `mods/` alongside the mod that requires AtomLib.
 
