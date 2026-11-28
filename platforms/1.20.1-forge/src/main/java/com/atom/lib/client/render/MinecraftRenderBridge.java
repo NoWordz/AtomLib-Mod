@@ -54,6 +54,11 @@ public final class MinecraftRenderBridge implements AutoCloseable {
     public <T> T withFrameAccess(Function<BorrowedFrame,T> action) { RenderSystem.assertOnRenderThread();return bridge.withFrameAccess(target(),action); }
     /** Host-side raw context lease; never execute Minecraft rendering inside a Skija pass. */
     public <T> T withContext(Function<io.github.humbleui.skija.DirectContext,T> action) { RenderSystem.assertOnRenderThread();return bridge.withContext(action); }
+    /** @see SkijaRenderBridge#withTextureResources(Function) */
+    public <T> T withTextureResources(Function<SkijaRenderBridge.TextureResources,T> action) {
+        RenderSystem.assertOnRenderThread();
+        return bridge.withTextureResources(action);
+    }
     public void prepare() { RenderSystem.assertOnRenderThread();bridge.prepare(target()); }
     public Image captureFrame() { RenderSystem.assertOnRenderThread();return bridge.captureFrame(target()); }
     private static FramebufferTarget target() {

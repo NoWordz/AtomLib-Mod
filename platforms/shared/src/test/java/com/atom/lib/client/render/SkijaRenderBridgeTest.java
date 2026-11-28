@@ -15,6 +15,7 @@ import io.github.humbleui.skija.SurfaceOrigin;
 import io.github.humbleui.types.Rect;
 import org.junit.jupiter.api.Test;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.lwjgl.opengl.GL33C.*;
 
@@ -164,6 +165,140 @@ final class SkijaRenderBridgeTest extends HiddenGlFixture {
             assertEquals(8,glGetInteger(GL_UNPACK_ALIGNMENT));
             bridge.draw(target,c -> c.clear(0xff0000ff));
             assertArrayEquals(new int[]{0,0,255,255},pixel(target,4,4));
+        }
+        assertEquals(GL_NO_ERROR,glGetError());
+    }
+
+    @Test void textureResourcesUseTheSkiaScopeForBothLeasesAroundVanillaDrawing() {
+        FramebufferTarget target=framebuffer(16,16),first=framebuffer(16,16),second=framebuffer(16,16);
+        int pack=buffer(),unpack=buffer(),ubo=buffer();
+        int scratch=Math.min(32,glGetInteger(GL_MAX_TEXTURE_IMAGE_UNITS))-1;
+        int high=glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS)-1;
+        glActiveTexture(GL_TEXTURE0+scratch);
+        int scratchTexture=texture(GL_TEXTURE_2D),scratchSampler=sampler();
+        glBindSampler(scratch,scratchSampler);
+        glActiveTexture(GL_TEXTURE0+high);
+        int highCube=texture(GL_TEXTURE_CUBE_MAP);
+        glBindBuffer(GL_UNIFORM_BUFFER,ubo);
+        glBufferData(GL_UNIFORM_BUFFER,64,GL_STATIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER,1,ubo);
+        glEnable(GL_CLIP_DISTANCE0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER,pack);
+        glBufferData(GL_PIXEL_PACK_BUFFER,4096,GL_STREAM_READ);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER,unpack);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER,4096,GL_STREAM_DRAW);
+        int[] firstLeaseCalls=new int[2],secondLeaseCalls=new int[2],fullCalls=new int[2];
+        AtomicInteger releases=new AtomicInteger();
+
+        try(var runtime=AtomLibRuntime.open("gl-texture-resources");var bridge=new SkijaRenderBridge(runtime)) {
+            Object owner=null;
+            Image previous=null;
+            try {
+                for(int frame=0;frame<2;frame++) {
+                    Image old=previous;
+                    try(GlStateScope scope=GlStateScope.capture()) {}
+                    fullCalls[frame]=GlStateScope.lastCaptureCalls();
+                    Object currentOwner=bridge.withTextureResources(resources -> {
+                        resources.flush();
+                        if(old!=null) old.close();
+                        return resources.ownerIdentity();
+                    });
+                    firstLeaseCalls[frame]=GlStateScope.lastCaptureCalls();
+                    if(frame==0) owner=currentOwner;else assertSame(owner,currentOwner);
+                    assertEquals(frame,releases.get(),"previous image released after submitting sampling");
+                    previous=null;
+
+                    FramebufferTarget icon=frame==0 ? first : second;
+                    float red=frame==0 ? 1 : 0;
+                    bridge.vanillaPass(() -> {
+                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,icon.framebuffer());
+                        glBindFramebuffer(GL_READ_FRAMEBUFFER,target.framebuffer());
+                        glViewport(1,2,12,13);
+                        glDisable(GL_SCISSOR_TEST);
+                        glColorMask(true,true,true,true);
+                        glClearColor(red,1-red,0,1);
+                        glClear(GL_COLOR_BUFFER_BIT);
+                        glPixelStorei(GL_PACK_ROW_LENGTH,31);
+                        glPixelStorei(GL_UNPACK_ALIGNMENT,8);
+                    });
+                    previous=bridge.withTextureResources(resources -> {
+                        assertEquals(0,glGetInteger(GL_PIXEL_PACK_BUFFER_BINDING));
+                        assertEquals(0,glGetInteger(GL_PIXEL_UNPACK_BUFFER_BINDING));
+                        assertEquals(0,glGetInteger(GL_PACK_ROW_LENGTH));
+                        assertEquals(1,glGetInteger(GL_UNPACK_ALIGNMENT));
+                        return resources.borrowRgba8Texture(16,16,icon.colorTexture(),releases::incrementAndGet);
+                    });
+                    secondLeaseCalls[frame]=GlStateScope.lastCaptureCalls();
+                    assertEquals(icon.framebuffer(),glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING));
+                    assertEquals(target.framebuffer(),glGetInteger(GL_READ_FRAMEBUFFER_BINDING));
+                    assertArrayEquals(new int[]{1,2,12,13},GlStateScopeTest.ints(GL_VIEWPORT,4));
+                    assertEquals(pack,glGetInteger(GL_PIXEL_PACK_BUFFER_BINDING));
+                    assertEquals(unpack,glGetInteger(GL_PIXEL_UNPACK_BUFFER_BINDING));
+                    assertEquals(31,glGetInteger(GL_PACK_ROW_LENGTH));
+                    assertEquals(8,glGetInteger(GL_UNPACK_ALIGNMENT));
+                    assertTrue(glIsEnabled(GL_CLIP_DISTANCE0));
+                    assertEquals(ubo,glGetIntegeri(GL_UNIFORM_BUFFER_BINDING,1));
+                    assertEquals(GL_TEXTURE0+high,glGetInteger(GL_ACTIVE_TEXTURE));
+                    assertEquals(highCube,glGetInteger(GL_TEXTURE_BINDING_CUBE_MAP));
+                    glActiveTexture(GL_TEXTURE0+scratch);
+                    assertEquals(scratchTexture,glGetInteger(GL_TEXTURE_BINDING_2D));
+                    assertEquals(scratchSampler,glGetIntegeri(GL_SAMPLER_BINDING,scratch));
+                    glActiveTexture(GL_TEXTURE0+high);
+
+                    Image image=previous;
+                    glDisable(GL_CLIP_DISTANCE0);
+                    bridge.draw(target,c -> c.drawImage(image,0,0));
+                    glEnable(GL_CLIP_DISTANCE0);
+                    assertArrayEquals(frame==0 ? new int[]{255,0,0,255} : new int[]{0,255,0,255},pixel(target,8,8));
+                    assertEquals(frame,releases.get(),"drawing retains the current texture");
+                    // Readback uses its own PACK state. Put back the host's binding for the next lease.
+                    glBindBuffer(GL_PIXEL_PACK_BUFFER,pack);
+                }
+                Image last=previous;
+                bridge.withTextureResources(resources -> {
+                    resources.flush();
+                    last.close();
+                    return null;
+                });
+            } finally {
+                if(previous!=null && !previous.isClosed()) previous.close();
+            }
+        }
+        assertEquals(2,releases.get());
+        assertTrue(glIsTexture(first.colorTexture()));
+        assertTrue(glIsTexture(second.colorTexture()));
+        assertEquals(GL_NO_ERROR,glGetError());
+        for(int i=0;i<2;i++) {
+            assertTrue(firstLeaseCalls[i]<fullCalls[i],"flush lease used "+firstLeaseCalls[i]+" vs full "+fullCalls[i]);
+            assertTrue(secondLeaseCalls[i]<fullCalls[i],"import lease used "+secondLeaseCalls[i]+" vs full "+fullCalls[i]);
+        }
+        System.out.println("Item resource GL entries: full="+java.util.Arrays.toString(fullCalls)
+                +" flush="+java.util.Arrays.toString(firstLeaseCalls)+" import="+java.util.Arrays.toString(secondLeaseCalls));
+    }
+
+    @Test void textureResourceCallbackCannotEscapeTheRenderContextAndRestoresStateOnFailure() {
+        FramebufferTarget target=framebuffer(16,16);
+        int unpack=buffer();
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER,unpack);
+        glPixelStorei(GL_UNPACK_ALIGNMENT,8);
+        SkijaRenderBridge.TextureResources[] escaped=new SkijaRenderBridge.TextureResources[1];
+        try(var runtime=AtomLibRuntime.open("gl-texture-resources-failure");var bridge=new SkijaRenderBridge(runtime)) {
+            IllegalArgumentException error=assertThrows(IllegalArgumentException.class,() -> bridge.withTextureResources(resources -> {
+                escaped[0]=resources;
+                assertThrows(IllegalStateException.class,() -> bridge.withContext(context -> null));
+                assertThrows(IllegalStateException.class,() -> bridge.vanillaPass(() -> fail("must not run")));
+                assertThrows(IllegalStateException.class,bridge::close);
+                CompletableFuture.runAsync(() -> assertThrows(IllegalStateException.class,resources::ownerIdentity)).join();
+                assertEquals(1,glGetInteger(GL_UNPACK_ALIGNMENT));
+                throw new IllegalArgumentException("resource callback failed");
+            }));
+            assertEquals("resource callback failed",error.getMessage());
+            assertEquals(unpack,glGetInteger(GL_PIXEL_UNPACK_BUFFER_BINDING));
+            assertEquals(8,glGetInteger(GL_UNPACK_ALIGNMENT));
+            assertThrows(IllegalStateException.class,escaped[0]::flush);
+            assertThrows(IllegalStateException.class,escaped[0]::ownerIdentity);
+            bridge.draw(target,c -> c.clear(0xff102030));
+            assertArrayEquals(new int[]{16,32,48,255},pixel(target,8,8));
         }
         assertEquals(GL_NO_ERROR,glGetError());
     }

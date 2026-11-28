@@ -17,7 +17,7 @@ import static org.lwjgl.opengl.GL33C.*;
  * <ul>
  *   <li>{@link #capture()} keeps the full contract used by {@code withContext}
  *       and any arbitrary host GL caller.</li>
- *   <li>{@link #captureSkia()} serves the bridge's own Skia-only pass and may
+ *   <li>{@link #captureSkia()} serves the bridge's Skia-only drawing and texture leases and may
  *       use the slim boundary. The slim boundary drops the state families the
  *       Ganesh GL backend provably never writes (uniform-buffer bindings, clip
  *       distances, sample mask). Writing nothing means there is nothing to
@@ -279,9 +279,14 @@ public final class GlStateScope implements AutoCloseable {
             uniformBuffers=new int[maxUniformBufferBindings()];uniformOffsets=new long[uniformBuffers.length];uniformSizes=new long[uniformBuffers.length];
             for(int i=0;i<uniformBuffers.length;i++) {
                 uniformBuffers[i]=glGetIntegeri(GL_UNIFORM_BUFFER_BINDING,i);
-                uniformOffsets[i]=glGetInteger64i(GL_UNIFORM_BUFFER_START,i);uniformSizes[i]=glGetInteger64i(GL_UNIFORM_BUFFER_SIZE,i);
+                // An unbound slot has no range. Its zero binding must still be restored.
+                if(uniformBuffers[i]!=0) {
+                    uniformOffsets[i]=glGetInteger64i(GL_UNIFORM_BUFFER_START,i);
+                    uniformSizes[i]=glGetInteger64i(GL_UNIFORM_BUFFER_SIZE,i);
+                    spend(2);
+                }
             }
-            spend(uniformBuffers.length*3);
+            spend(uniformBuffers.length);
         } else { uniformBuffers=null;uniformOffsets=null;uniformSizes=null; }
         activeTexture=glGetInteger(GL_ACTIVE_TEXTURE);spend(1);
         hasSamplers=limits != null ? limits.hasSamplers : (capabilities.OpenGL33 || capabilities.GL_ARB_sampler_objects);
@@ -334,7 +339,7 @@ public final class GlStateScope implements AutoCloseable {
         return capture(false);
     }
 
-    /** Only for the bridge's Skia-only drawing path; arbitrary host GL uses capture(). */
+    /** Only for controlled Skia operations; arbitrary host GL uses capture(). */
     static GlStateScope captureSkia() { return capture(true); }
 
     private static GlStateScope capture(boolean skia) {

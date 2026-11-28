@@ -7,6 +7,35 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.lwjgl.opengl.GL33C.*;
 
 final class GlStateScopeTest extends HiddenGlFixture {
+    @Test void uniformBufferRangesAreQueriedOnlyForOccupiedSlotsAndAllSlotsAreRestored() {
+        int whole=buffer(),ranged=buffer();
+        long alignment=glGetInteger(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+        glBindBuffer(GL_UNIFORM_BUFFER,whole);
+        glBufferData(GL_UNIFORM_BUFFER,64,GL_STATIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER,ranged);
+        glBufferData(GL_UNIFORM_BUFFER,alignment+64,GL_STATIC_DRAW);
+        try(GlStateScope scope=GlStateScope.capture()) {}
+        int emptyCaptureCalls=GlStateScope.lastCaptureCalls();
+
+        glBindBufferBase(GL_UNIFORM_BUFFER,0,whole);
+        glBindBufferRange(GL_UNIFORM_BUFFER,1,ranged,alignment,64);
+        glBindBuffer(GL_UNIFORM_BUFFER,whole);
+        try(GlStateScope scope=GlStateScope.capture()) {
+            glBindBufferBase(GL_UNIFORM_BUFFER,0,0);
+            glBindBufferBase(GL_UNIFORM_BUFFER,1,whole);
+            glBindBufferBase(GL_UNIFORM_BUFFER,2,ranged);
+        }
+        assertEquals(whole,glGetInteger(GL_UNIFORM_BUFFER_BINDING));
+        assertEquals(whole,glGetIntegeri(GL_UNIFORM_BUFFER_BINDING,0));
+        assertEquals(ranged,glGetIntegeri(GL_UNIFORM_BUFFER_BINDING,1));
+        assertEquals(alignment,glGetInteger64i(GL_UNIFORM_BUFFER_START,1));
+        assertEquals(64,glGetInteger64i(GL_UNIFORM_BUFFER_SIZE,1));
+        assertEquals(0,glGetIntegeri(GL_UNIFORM_BUFFER_BINDING,2));
+        assertEquals(GL_NO_ERROR,glGetError());
+        assertEquals(4,GlStateScope.lastCaptureCalls()-emptyCaptureCalls,
+                "only the two occupied slots require offset and size queries");
+    }
+
     @Test void independentDrawBufferBlendAndColorMasksSurviveGlobalChanges() {
         framebuffer(16,16);
         glEnablei(GL_BLEND,0);glDisablei(GL_BLEND,1);

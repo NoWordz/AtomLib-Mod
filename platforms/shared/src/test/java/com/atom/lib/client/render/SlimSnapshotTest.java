@@ -52,6 +52,14 @@ final class SlimSnapshotTest extends HiddenGlFixture {
         int ubo = glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
         int clips = glGetInteger(GL_MAX_CLIP_DISTANCES);
         int words = glGetInteger(GL_MAX_SAMPLE_MASK_WORDS);
+        // Exercise the range-query cost of occupied slots. The sparse case is
+        // covered separately by GlStateScopeTest.
+        int bound = buffer();
+        glBindBuffer(GL_UNIFORM_BUFFER, bound);
+        glBufferData(GL_UNIFORM_BUFFER, 64, GL_STATIC_DRAW);
+        for (int slot = 0; slot < ubo; slot++) {
+            glBindBufferRange(GL_UNIFORM_BUFFER, slot, bound, 0, 64);
+        }
         int[] full = new int[2];
         int[] slim = new int[2];
 

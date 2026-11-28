@@ -6,10 +6,13 @@ import com.atom.lib.render.CustomPainter;
 import com.atom.lib.render.RenderSession;
 import io.github.humbleui.skija.BackendRenderTarget;
 import io.github.humbleui.skija.BackendState;
+import io.github.humbleui.skija.BackendTexture;
+import io.github.humbleui.skija.ColorAlphaType;
 import io.github.humbleui.skija.ColorSpace;
 import io.github.humbleui.skija.ColorType;
 import io.github.humbleui.skija.ContentChangeMode;
 import io.github.humbleui.skija.DirectContext;
+import io.github.humbleui.skija.GLTextureInfo;
 import io.github.humbleui.skija.Surface;
 import io.github.humbleui.skija.SurfaceOrigin;
 import org.lwjgl.opengl.GL;
@@ -64,6 +67,7 @@ public final class SkijaRenderBridge implements AutoCloseable {
     public static void assertOutsideSkijaPass(){if(PAINTING.get())throw new IllegalStateException("Raw GL cannot run inside a Skija pass");}
     private final RuntimeHandle runtime;
     private final Thread thread = Thread.currentThread();
+    private final Object textureOwnerIdentity = new Object();
     private DirectContext context;
     private GLCapabilities capabilities;
     private long window;
@@ -100,6 +104,64 @@ public final class SkijaRenderBridge implements AutoCloseable {
             return action.apply(context);
         }
     }
+
+    /**
+     * Prepare Skija texture resources outside a drawing pass. The callback may use
+     * the lease and close its own borrowed Skija images. Keep native GL and host
+     * rendering between leases, so each lease restores the state at its own entry.
+     */
+    public <T> T withTextureResources(Function<TextureResources,T> action) {
+        Objects.requireNonNull(action);
+        requireThreadAndOpen();runtime.requireOpen();requireOutsidePass();requireContext();
+        PAINTING.set(true);
+        try(GlStateScope ignored=GlStateScope.captureSkia()) {
+            glActiveTexture(GL_TEXTURE0);
+            normalizePixelTransfer();
+            ensureContext();
+            context.resetGLAll();
+            TextureResources resources=new TextureResources(this);
+            try { return action.apply(resources); }
+            finally { resources.bridge=null; }
+        } finally { PAINTING.remove(); }
+    }
+
+    /** Synchronous lease for submission and RGBA8 texture borrowing. */
+    public static final class TextureResources {
+        private final Thread owner=Thread.currentThread();
+        private SkijaRenderBridge bridge;
+
+        private TextureResources(SkijaRenderBridge bridge) { this.bridge=bridge; }
+
+        /** Stable, retainable identity token for the lifetime of this bridge's context. */
+        public Object ownerIdentity() { return requireActive().textureOwnerIdentity; }
+
+        /** Submit queued sampling before retiring previously borrowed images. */
+        public void flush() { requireActive().context.flushAndSubmit(false); }
+
+        /**
+         * Borrow a completed, non-mipmapped, premultiplied GL_TEXTURE_2D.
+         * Close the returned image on the render thread. Keep the texture live
+         * and unchanged until onRelease runs. The callback may enqueue retirement
+         * for later host-side GL deletion, which must happen outside the lease.
+         */
+        public Image borrowRgba8Texture(int width,int height,int texture,Runnable onRelease) {
+            DirectContext context=requireActive().context;
+            Objects.requireNonNull(onRelease);
+            try(BackendTexture backend=BackendTexture.makeGL(width,height,false,
+                    new GLTextureInfo(GL_TEXTURE_2D,texture,GL_RGBA8))) {
+                return Image.borrowTextureFrom(context,backend,SurfaceOrigin.BOTTOM_LEFT,
+                        ColorType.RGBA_8888,ColorAlphaType.PREMUL,null,onRelease);
+            }
+        }
+
+        private SkijaRenderBridge requireActive() {
+            if(Thread.currentThread()!=owner) throw new IllegalStateException("Texture resources belong to their render thread");
+            if(bridge==null) throw new IllegalStateException("Texture resource callback has ended");
+            bridge.requireContext();
+            return bridge;
+        }
+    }
+
     /** Ensure target identity and size are current; does not transfer any native handle. */
     public void prepare(FramebufferTarget target) { withFrameAccess(target,frame -> null); }
     /** Returned Image is owned by the caller, who must close it on the render thread. */
