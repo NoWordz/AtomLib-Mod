@@ -15,7 +15,7 @@
 
 ## 安装
 
-当前源码为尚未发布的 **0.8.0 候选**。AtomLib 独立发行页的最新版仍为 0.7.0；0.7.1 可从 [AtomChat 0.9.5 发行页](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5) 下载对应加载器的配套 JAR。
+**0.8.0** 独立发行版提供三端安装 JAR、桌面原生库离线包和供模组开发使用的七模块 Maven ZIP。
 
 选择与 Minecraft 版本及 Forge、Fabric 或 NeoForge 加载器匹配的 JAR，与依赖 AtomLib 的模组一起放入 `mods/`。
 

@@ -1,10 +1,13 @@
 # AtomLib status
 
-**当前源码为尚未发布的 0.8.0 候选。** AtomLib 独立公开版仍为 [0.7.0](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.7.0)，0.7.1 已随 [AtomChat 0.9.5](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5) 的三端配套 JAR 和固定输入公开。
+**当前独立发行版为 0.8.0。** [GitHub Release](https://github.com/NoWordz/AtomLib-Mod/releases/tag/v0.8.0)
 
-## 0.8.0 开发状态
+## 0.8.0 交付状态
 
-- 从 0.7.2 加固候选继续开发，回迁 `bfcca160` 的三端专用纹理借用接口。Preview 独立主题目录、滚动渐隐和可中断动效均由宿主显式选用，见 [示例页与接入方式](wiki/sessions.md#preview-settings-assets)。
+- 发行包含 Forge 1.20.1、Fabric 和 NeoForge 1.21.1 安装 JAR，四份桌面原生库离线包，以及七模块 Maven ZIP 与 SHA-256 校验文件。Maven ZIP 内的三端主 JAR 与安装附件逐字节一致。 [固定 Maven ZIP](https://github.com/NoWordz/AtomLib-Mod/releases/download/v0.8.0/atomlib-input-0.8.0.zip)
+- 制品源码为 `b1b09930aacbd9979fc8ef5db89c04dad19842b2`。本版包含 0.7.2 候选的兼容修复、三端专用纹理借用，以及由宿主显式选用的 Preview 主题、滚动渐隐和可中断动效。 [示例页与接入方式](wiki/sessions.md#preview-settings-assets)
+- 0.8.0 的 Windows 本地验证覆盖三端安装包、公共四模块、三端各 84 项隐藏窗口 GL 与失败回退检查，以及旧版的 1,971 个公开符号和 36 个默认集合场景。已有隔离实机记录中，NeoForge 首次切页仍出现个别长帧，原因尚未确定。
+- 0.7.1 此前以三端配套 JAR 和固定输入发布。 [AtomChat 0.9.5 发行页](https://github.com/NoWordz/AtomChat-Mod/releases/tag/v0.9.5)
 
 ## 0.7.2 加固候选历史
 

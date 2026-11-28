@@ -10,11 +10,13 @@
 **修复**
 
 - 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题
+- 修复 Windows 上 Forge 1.20.1 首次使用布局时无法读取内置 Yoga DLL 的问题
 
 **更改**
 
 - 网格和表格支持宿主自定义皮肤，保留原有默认样式和 API
-- Maven 输入包含当前版本的七个完整模块和校验文件
+- 前端契约支持稳定语义代际和类型化兼容错误，并保留对已发布的 0.6.0 与 0.7.0 旧绑定的支持
+- 发布七模块 Maven ZIP 与校验文件，其中三端主 JAR 与安装附件一致
 
 **性能**
 
@@ -30,11 +32,13 @@
 **Fixed**
 
 - Fixed stale duplicate transfers closing a resource still retained in the current cache
+- Fixed Forge 1.20.1 failing to read the bundled Yoga DLL on first use of layout on Windows
 
 **Changed**
 
 - Grids and tables support host-defined skins and retain the shipped defaults and APIs
-- Maven inputs contain all seven modules for the current version and a checksum
+- Frontend contracts support a stable interpreter epoch and typed compatibility errors while retaining support for the published 0.6.0 and 0.7.0 legacy bindings
+- The release includes a seven-module Maven ZIP and checksum, with platform JARs identical to the installation assets
 
 **Performance**
 

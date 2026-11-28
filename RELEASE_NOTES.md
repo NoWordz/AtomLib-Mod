@@ -4,41 +4,43 @@
 
 **新增**
 
-- 提供十套可选 Preview 主题，带面板、卡片、胶囊、描边及玻璃材质颜色
-- 提供可中断的 240 ms 切页动效和滚动边缘渐隐，示例设置页可切换主题和动效
+- 新增十套可选 Preview 主题、可中断的 240 ms 切页动效和滚动边缘渐隐，可在离屏设置页示例中预览
 
 **修复**
 
-- 修复过期票据重复转交同一资源时提前关闭当前缓存对象的问题
+- 修复缓存资源被提前关闭的问题
+- 修复 Windows 上 Forge 1.20.1 首次使用 Yoga 布局时读取内置 DLL 的问题
 
 **更改**
 
-- 网格和表格支持宿主自定义皮肤，保留原有默认样式和 API
-- Maven 输入包含当前版本的七个完整模块和校验文件
+- 网格和表格支持自定义皮肤，前端契约继续支持已发布的旧绑定
+- 三端物品图标可通过专用纹理借用接口减少 OpenGL 状态查询
 
-**性能**
+**说明**
 
-- 三端物品图标可以通过专用纹理借用接口减少 OpenGL 状态查询，通用渲染回调继续完整保护宿主状态
+- 请选择 Forge 1.20.1、Fabric 1.21.1 或 NeoForge 1.21.1 的安装 JAR；macOS 和 Linux 可按系统和架构选用桌面原生库离线 ZIP
+- 七模块 Maven ZIP 供模组开发使用，内含与安装附件一致的三端主 JAR
 
 ----
 
 **Added**
 
-- Added ten opt-in Preview themes with panel, card, capsule, outline and glass material colors
-- Added interruptible 240 ms page transitions and scroll edge fading, with theme and motion choices in the settings example
+- Added ten opt-in Preview themes, interruptible 240 ms page transitions and scroll edge fading, all available in the offscreen settings example
 
 **Fixed**
 
-- Fixed stale duplicate transfers closing a resource still retained in the current cache
+- Fixed cached resources being closed prematurely
+- Fixed loading the bundled DLL on first use of Yoga layout on Windows with Forge 1.20.1
 
 **Changed**
 
-- Grids and tables support host-defined skins and retain the shipped defaults and APIs
-- Maven inputs contain all seven modules for the current version and a checksum
+- Grids and tables support custom skins, and frontend contracts remain compatible with published legacy bindings
+- The dedicated borrowed-texture path reduces OpenGL state queries for item icons across all three loaders
 
-**Performance**
+**Notes**
 
-- Added a dedicated borrowed-texture path for item icons on all three loaders, with full host-state protection retained for general rendering callbacks
+- Choose the installation JAR for Forge 1.20.1, Fabric 1.21.1 or NeoForge 1.21.1, and use the matching offline native ZIP if needed on macOS or Linux
+- The seven-module Maven ZIP is for mod development and contains the same platform JARs as the installation assets
 
 ## v0.7.1
 
